@@ -17,4 +17,8 @@ export type Template = {
   isPublic?: boolean;
   // Added field for document type
   documentType: 'pdf' | 'doc' | 'docx';
+  // Added for compatibility with templateStorage.ts
+  mappingFields?: string[];
+  createdAt?: Date;
+  lastUpdated?: Date;
 };

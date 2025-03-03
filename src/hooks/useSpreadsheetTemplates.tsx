@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from 'react';
-import { templateStorage } from '@/services/templateStorage';
+import { templateStorage, Template } from '@/services/templateStorage';
 
-export interface Template {
+export interface SpreadsheetTemplate {
   id: string;
   name: string;
   mappingFields?: string[];
@@ -11,7 +11,7 @@ export interface Template {
 }
 
 export const useSpreadsheetTemplates = () => {
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templates, setTemplates] = useState<SpreadsheetTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   
   useEffect(() => {
@@ -20,7 +20,13 @@ export const useSpreadsheetTemplates = () => {
         // Charger les templates depuis le stockage partagé
         const storedTemplates = await templateStorage.getTemplates(false);
         if (storedTemplates.length > 0) {
-          setTemplates(storedTemplates);
+          setTemplates(storedTemplates.map(template => ({
+            id: template.id,
+            name: template.name,
+            mappingFields: template.mappingFields,
+            type: template.type,
+            fields: template.fields
+          })));
         } else {
           // Fallback aux templates par défaut
           setTemplates([

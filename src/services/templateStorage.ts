@@ -1,7 +1,7 @@
 
 import { toast } from 'sonner';
 
-// Template interface
+// Template interface - aligned with components/admin/templates/types.ts
 export interface Template {
   id: string;
   name: string;
@@ -19,6 +19,8 @@ export interface Template {
   organizationId?: string;
   documentType?: 'pdf' | 'doc' | 'docx';
   mappingConfig?: Record<string, string>;
+  // Added for compatibility with admin templates type
+  date?: string;
 }
 
 // Storage keys
