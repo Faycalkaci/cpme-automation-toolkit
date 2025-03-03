@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { toast } from 'sonner';
 import { useDataTable } from './DataTableContext';
@@ -6,7 +5,7 @@ import { generateAndDownloadPdf, validateRequiredFields } from '@/utils/pdfUtils
 import { getValidEmailsFromData, displayEmailResults, displayEmailAddresses } from '@/utils/emailUtils';
 import { exportToCsv } from '@/utils/exportUtils';
 
-const DataTableOperations: React.FC = () => {
+export const useDataTableOperations = () => {
   const { 
     headers, 
     getSelectedRowsData, 
@@ -65,6 +64,10 @@ const DataTableOperations: React.FC = () => {
     handleSendEmail,
     handleExportCsv
   };
+};
+
+const DataTableOperations: React.FC = () => {
+  return null; // Not used directly anymore
 };
 
 export default DataTableOperations;

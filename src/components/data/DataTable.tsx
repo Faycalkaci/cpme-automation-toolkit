@@ -8,7 +8,8 @@ import TableActions from './TableActions';
 import TableFooter from './TableFooter';
 import DataTableHeader from './DataTableHeader';
 import DataTableBody from './DataTableBody';
-import DataTableOperations from './DataTableOperations';
+import { useDataTableOperations } from './DataTableOperations';
+import { useDataTable } from './DataTableContext';
 
 interface DataTableProps {
   data: any[];
@@ -36,11 +37,9 @@ const DataTable: React.FC<DataTableProps> = ({
 };
 
 const DataTableContent: React.FC = () => {
-  const useOperations = DataTableOperations();
-  
   return (
     <div className="space-y-4">
-      <DataTableControls useOperations={useOperations} />
+      <DataTableControls />
       
       <div className="rounded-md border">
         <div className="relative overflow-x-auto">
@@ -51,12 +50,12 @@ const DataTableContent: React.FC = () => {
         </div>
       </div>
       
-      <DataTableFooter useOperations={useOperations} />
+      <DataTableFooter />
     </div>
   );
 };
 
-const DataTableControls: React.FC<{ useOperations: any }> = ({ useOperations }) => {
+const DataTableControls: React.FC = () => {
   const { 
     searchTerm, 
     setSearchTerm, 
@@ -65,7 +64,8 @@ const DataTableControls: React.FC<{ useOperations: any }> = ({ useOperations }) 
     selectedCount
   } = useDataTable();
   
-  const { handleGeneratePdf, handleSendEmail, handleExportCsv } = useOperations;
+  const operations = useDataTableOperations();
+  const { handleGeneratePdf, handleSendEmail, handleExportCsv } = operations;
   
   return (
     <div className="flex flex-col sm:flex-row gap-4 justify-between">
@@ -91,14 +91,15 @@ const DataTableControls: React.FC<{ useOperations: any }> = ({ useOperations }) 
   );
 };
 
-const DataTableFooter: React.FC<{ useOperations: any }> = ({ useOperations }) => {
+const DataTableFooter: React.FC = () => {
   const { 
     data, 
     filteredData, 
     selectedCount 
   } = useDataTable();
   
-  const { handleGeneratePdf, handleSendEmail, handleExportCsv } = useOperations;
+  const operations = useDataTableOperations();
+  const { handleGeneratePdf, handleSendEmail, handleExportCsv } = operations;
   
   if (filteredData.length === 0) {
     return null;
