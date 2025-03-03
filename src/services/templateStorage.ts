@@ -11,10 +11,19 @@ export interface Template {
   createdAt: Date;
   createdBy?: string;
   lastUpdated?: Date;
+  type?: 'facture' | 'appel' | 'rappel' | 'autre';
+  permanent?: boolean;
+  fileUrl?: string;
+  fields?: string[];
+  savedBy?: string;
+  organizationId?: string;
+  documentType?: 'pdf' | 'doc' | 'docx';
+  mappingConfig?: Record<string, string>;
 }
 
 // Storage keys
 const TEMPLATES_KEY = 'cpme_pdf_templates';
+const ADMIN_TEMPLATES_KEY = 'cpme_admin_templates';
 
 /**
  * Service for storing and retrieving PDF templates
@@ -23,12 +32,12 @@ const TEMPLATES_KEY = 'cpme_pdf_templates';
  */
 export const templateStorage = {
   /**
-   * Save a template to storage
+   * Save a template to storage (shared across the application)
    */
-  saveTemplate: async (template: Template): Promise<Template> => {
+  saveTemplate: async (template: Template, adminTemplate: boolean = false): Promise<Template> => {
     try {
       // Get existing templates
-      const templates = await templateStorage.getTemplates();
+      const templates = await templateStorage.getTemplates(adminTemplate);
       
       // Check if template with same ID already exists
       const existingIndex = templates.findIndex(t => t.id === template.id);
@@ -44,11 +53,13 @@ export const templateStorage = {
       }
       
       // Save to localStorage
-      localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+      const storageKey = adminTemplate ? ADMIN_TEMPLATES_KEY : TEMPLATES_KEY;
+      localStorage.setItem(storageKey, JSON.stringify(templates));
       
-      // If this were a Firebase implementation, we would do something like:
-      // const templatesRef = collection(db, 'templates');
-      // await setDoc(doc(templatesRef, template.id), template);
+      // Also save to the shared templates if it's an admin template
+      if (adminTemplate && template.permanent) {
+        await templateStorage.saveToSharedTemplates(template);
+      }
       
       return template;
     } catch (error) {
@@ -59,11 +70,37 @@ export const templateStorage = {
   },
   
   /**
+   * Save admin template to the shared templates store
+   */
+  saveToSharedTemplates: async (template: Template): Promise<void> => {
+    try {
+      const sharedTemplates = await templateStorage.getTemplates(false);
+      const existingIndex = sharedTemplates.findIndex(t => t.id === template.id);
+      
+      if (existingIndex >= 0) {
+        // Update existing template
+        sharedTemplates[existingIndex] = {
+          ...template,
+          lastUpdated: new Date()
+        };
+      } else {
+        // Add new template
+        sharedTemplates.push(template);
+      }
+      
+      localStorage.setItem(TEMPLATES_KEY, JSON.stringify(sharedTemplates));
+    } catch (error) {
+      console.error('Error saving to shared templates:', error);
+    }
+  },
+  
+  /**
    * Get all templates from storage
    */
-  getTemplates: async (): Promise<Template[]> => {
+  getTemplates: async (adminTemplates: boolean = false): Promise<Template[]> => {
     try {
-      const templatesJson = localStorage.getItem(TEMPLATES_KEY);
+      const storageKey = adminTemplates ? ADMIN_TEMPLATES_KEY : TEMPLATES_KEY;
+      const templatesJson = localStorage.getItem(storageKey);
       if (!templatesJson) return [];
       
       // Parse templates from localStorage
@@ -75,11 +112,6 @@ export const templateStorage = {
         createdAt: new Date(template.createdAt),
         lastUpdated: template.lastUpdated ? new Date(template.lastUpdated) : undefined
       }));
-      
-      // If this were a Firebase implementation, we would do something like:
-      // const templatesRef = collection(db, 'templates');
-      // const snapshot = await getDocs(templatesRef);
-      // return snapshot.docs.map(doc => doc.data() as Template);
     } catch (error) {
       console.error('Error retrieving templates:', error);
       toast.error('Erreur lors de la récupération des modèles');
@@ -90,16 +122,20 @@ export const templateStorage = {
   /**
    * Delete a template from storage
    */
-  deleteTemplate: async (templateId: string): Promise<void> => {
+  deleteTemplate: async (templateId: string, adminTemplate: boolean = false): Promise<void> => {
     try {
-      const templates = await templateStorage.getTemplates();
+      const templates = await templateStorage.getTemplates(adminTemplate);
       const updatedTemplates = templates.filter(t => t.id !== templateId);
       
-      localStorage.setItem(TEMPLATES_KEY, JSON.stringify(updatedTemplates));
+      const storageKey = adminTemplate ? ADMIN_TEMPLATES_KEY : TEMPLATES_KEY;
+      localStorage.setItem(storageKey, JSON.stringify(updatedTemplates));
       
-      // If this were a Firebase implementation, we would do something like:
-      // const templateRef = doc(db, 'templates', templateId);
-      // await deleteDoc(templateRef);
+      // Also delete from shared templates if needed
+      if (adminTemplate) {
+        const sharedTemplates = await templateStorage.getTemplates(false);
+        const updatedSharedTemplates = sharedTemplates.filter(t => t.id !== templateId);
+        localStorage.setItem(TEMPLATES_KEY, JSON.stringify(updatedSharedTemplates));
+      }
     } catch (error) {
       console.error('Error deleting template:', error);
       toast.error('Erreur lors de la suppression du modèle');
@@ -110,16 +146,10 @@ export const templateStorage = {
   /**
    * Clear all templates (admin use only)
    */
-  clearTemplates: async (): Promise<void> => {
+  clearTemplates: async (adminTemplates: boolean = false): Promise<void> => {
     try {
-      localStorage.removeItem(TEMPLATES_KEY);
-      
-      // If this were a Firebase implementation, we would do something like:
-      // const templatesRef = collection(db, 'templates');
-      // const snapshot = await getDocs(templatesRef);
-      // snapshot.docs.forEach(async (doc) => {
-      //   await deleteDoc(doc.ref);
-      // });
+      const storageKey = adminTemplates ? ADMIN_TEMPLATES_KEY : TEMPLATES_KEY;
+      localStorage.removeItem(storageKey);
     } catch (error) {
       console.error('Error clearing templates:', error);
       toast.error('Erreur lors de la suppression des modèles');
@@ -127,63 +157,3 @@ export const templateStorage = {
     }
   }
 };
-
-// Firebase implementation notes:
-// To use Firebase instead of localStorage:
-// 1. Install Firebase SDK: npm install firebase
-// 2. Create a Firebase project and configuration
-// 3. Replace the localStorage operations with Firebase Firestore operations
-// 4. For file storage, use Firebase Storage
-
-/*
-Example Firebase implementation (commented out):
-
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-
-// Firebase config
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const storage = getStorage(app);
-
-export const templateStorage = {
-  saveTemplate: async (template: Template): Promise<Template> => {
-    try {
-      // If there's a file, upload it to Firebase Storage
-      if (template.file) {
-        const storageRef = ref(storage, `templates/${template.id}`);
-        await uploadBytes(storageRef, template.file);
-        const downloadUrl = await getDownloadURL(storageRef);
-        template.previewUrl = downloadUrl;
-      }
-      
-      // Save template metadata to Firestore
-      const templatesRef = collection(db, 'templates');
-      await setDoc(doc(templatesRef, template.id), {
-        ...template,
-        file: undefined, // Don't store the File object in Firestore
-        createdAt: new Date()
-      });
-      
-      return template;
-    } catch (error) {
-      console.error('Error saving template:', error);
-      toast.error('Erreur lors de la sauvegarde du modèle');
-      throw error;
-    }
-  },
-  
-  // Other methods would be similarly implemented using Firebase APIs
-};
-*/

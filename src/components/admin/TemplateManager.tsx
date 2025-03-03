@@ -9,55 +9,11 @@ import UploadDialog from './templates/UploadDialog';
 import DeleteDialog from './templates/DeleteDialog';
 import SaveDialog from './templates/SaveDialog';
 import PreviewDialog from './templates/PreviewDialog';
+import { templateStorage } from '@/services/templateStorage';
 
 const TemplateManager: React.FC = () => {
   const { user } = useAuth();
-  const [templates, setTemplates] = useState<Template[]>([
-    {
-      id: '1',
-      name: 'Appel de cotisation',
-      type: 'appel',
-      date: '2023-06-15',
-      fields: ['Entreprise', 'Adresse', 'Code Postal', 'Ville', 'Email', 'Montant'],
-      fileUrl: '/templates/appel-cotisation.pdf',
-      permanent: true,
-      savedBy: 'system',
-      mappingConfig: {
-        'DATE ECHEANCE': '{{DATE ECHEANCE}}',
-        'Cotisation': '{{Cotisation}}',
-        'N° adh': '{{N° adh}}',
-        'SOCIETE': '{{SOCIETE}}',
-        'Dirigeant': '{{Dirigeant}}',
-        'E MAIL 1': '{{E MAIL 1}}',
-        'E Mail 2': '{{E Mail 2}}',
-        'Adresse': '{{Adresse}}',
-        'ville': '{{ville}}'
-      },
-      documentType: 'pdf'
-    },
-    {
-      id: '2',
-      name: 'Facture standard',
-      type: 'facture',
-      date: '2023-08-20',
-      fields: ['Entreprise', 'Adresse', 'Code Postal', 'Ville', 'Email', 'Référence', 'Date', 'Montant HT', 'TVA', 'Total TTC'],
-      fileUrl: '/templates/facture.pdf',
-      permanent: true,
-      savedBy: 'system',
-      documentType: 'pdf'
-    },
-    {
-      id: '3',
-      name: 'Rappel de cotisation',
-      type: 'rappel',
-      date: '2023-09-05',
-      fields: ['Entreprise', 'Adresse', 'Code Postal', 'Ville', 'Email', 'Montant', 'Date échéance'],
-      fileUrl: '/templates/rappel-cotisation.pdf',
-      permanent: true,
-      savedBy: 'system',
-      documentType: 'pdf'
-    }
-  ]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -72,29 +28,17 @@ const TemplateManager: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
   useEffect(() => {
-    const savedTemplates = localStorage.getItem('cpme_templates');
-    if (savedTemplates) {
+    const loadTemplates = async () => {
       try {
-        const parsedTemplates = JSON.parse(savedTemplates);
-        const allTemplates = [...templates];
-        
-        parsedTemplates.forEach((savedTemplate: Template) => {
-          if (!allTemplates.some(t => t.id === savedTemplate.id)) {
-            allTemplates.push(savedTemplate);
-          }
-        });
-        
-        setTemplates(allTemplates);
+        const adminTemplates = await templateStorage.getTemplates(true);
+        setTemplates(adminTemplates);
       } catch (error) {
-        console.error('Error parsing saved templates:', error);
+        console.error('Error loading templates:', error);
       }
-    }
+    };
+    
+    loadTemplates();
   }, []);
-  
-  useEffect(() => {
-    const userTemplates = templates.filter(t => !t.permanent || t.savedBy !== 'system');
-    localStorage.setItem('cpme_templates', JSON.stringify(userTemplates));
-  }, [templates]);
   
   const canSaveTemplate = user && (user.role === 'admin' || user.role === 'super-admin');
   
@@ -188,10 +132,15 @@ const TemplateManager: React.FC = () => {
         organizationId: user?.organizationId,
         lastModified: new Date().toISOString(),
         mappingConfig: mappingConfig,
-        documentType: documentType
+        documentType: documentType,
+        permanent: canSaveTemplate,
+        createdAt: new Date()
       };
       
+      await templateStorage.saveTemplate(newTemplate, true);
+      
       setTemplates([...templates, newTemplate]);
+      
       setShowUploadDialog(false);
       setNewTemplateName('');
       setNewTemplateType('autre');
@@ -211,7 +160,7 @@ const TemplateManager: React.FC = () => {
     }
   };
   
-  const handleDeleteTemplate = () => {
+  const handleDeleteTemplate = async () => {
     if (templateToDelete) {
       if (templateToDelete.permanent && templateToDelete.savedBy === 'system') {
         toast.error('Action non autorisée', {
@@ -222,36 +171,51 @@ const TemplateManager: React.FC = () => {
         return;
       }
       
-      setTemplates(templates.filter(t => t.id !== templateToDelete.id));
+      try {
+        await templateStorage.deleteTemplate(templateToDelete.id, true);
+        setTemplates(templates.filter(t => t.id !== templateToDelete.id));
+        
+        toast.success('Modèle supprimé', {
+          description: `Le modèle "${templateToDelete.name}" a été supprimé.`
+        });
+      } catch (error) {
+        console.error('Error deleting template:', error);
+        toast.error('Erreur lors de la suppression du modèle');
+      }
+      
       setShowDeleteDialog(false);
       setTemplateToDelete(null);
-      
-      toast.success('Modèle supprimé', {
-        description: `Le modèle "${templateToDelete.name}" a été supprimé.`
-      });
     }
   };
   
-  const handleSaveTemplatePermanently = () => {
+  const handleSaveTemplatePermanently = async () => {
     if (templateToSave) {
-      const updatedTemplates = templates.map(template => 
-        template.id === templateToSave.id 
-          ? { 
-              ...template, 
-              permanent: true, 
-              savedBy: user?.name || user?.email || 'Anonymous',
-              lastModified: new Date().toISOString()
-            } 
-          : template
-      );
+      try {
+        const updatedTemplate = {
+          ...templateToSave,
+          permanent: true,
+          savedBy: user?.name || user?.email || 'Anonymous',
+          lastModified: new Date().toISOString()
+        };
+        
+        await templateStorage.saveTemplate(updatedTemplate, true);
+        
+        const updatedTemplates = templates.map(template => 
+          template.id === templateToSave.id ? updatedTemplate : template
+        );
+        
+        setTemplates(updatedTemplates);
+        
+        toast.success('Modèle sauvegardé définitivement', {
+          description: `Le modèle "${templateToSave.name}" est maintenant disponible pour tous les utilisateurs.`
+        });
+      } catch (error) {
+        console.error('Error saving template permanently:', error);
+        toast.error('Erreur lors de la sauvegarde du modèle');
+      }
       
-      setTemplates(updatedTemplates);
       setShowSaveDialog(false);
       setTemplateToSave(null);
-      
-      toast.success('Modèle sauvegardé définitivement', {
-        description: `Le modèle "${templateToSave.name}" est maintenant disponible pour tous les utilisateurs.`
-      });
     }
   };
   
