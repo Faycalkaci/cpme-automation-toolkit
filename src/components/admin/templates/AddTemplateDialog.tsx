@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { Plus, Trash2, Upload, FileText, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import FieldMappingSection from './FieldMappingSection';
+import TemplateFileDropzone from './TemplateFileDropzone';
 
 interface AddTemplateDialogProps {
   open: boolean;
@@ -30,38 +30,13 @@ const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
     name: '',
     mappingFields: []
   });
-  const [newField, setNewField] = useState('');
-
-  // File dropzone configuration
-  const { getRootProps, getInputProps, isDragActive, acceptedFiles } = useDropzone({
-    accept: {
-      'application/pdf': ['.pdf']
-    },
-    maxFiles: 1,
-    onDrop: (acceptedFiles) => {
-      const file = acceptedFiles[0];
-      if (file) {
-        // Create a preview URL for the dropped file
-        const previewUrl = URL.createObjectURL(file);
-        
-        setNewTemplate({
-          ...newTemplate,
-          file,
-          previewUrl
-        });
-      }
-    }
-  });
 
   // Add a field to the template mapping
-  const addField = () => {
-    if (newField.trim() && !newTemplate.mappingFields.includes(newField.trim())) {
-      setNewTemplate({
-        ...newTemplate,
-        mappingFields: [...newTemplate.mappingFields, newField.trim()]
-      });
-      setNewField('');
-    }
+  const addField = (field: string) => {
+    setNewTemplate({
+      ...newTemplate,
+      mappingFields: [...newTemplate.mappingFields, field]
+    });
   };
 
   // Remove a field from the template mapping
@@ -72,10 +47,18 @@ const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
     });
   };
 
+  // Handle file change
+  const handleFileChange = (file?: File) => {
+    setNewTemplate({
+      ...newTemplate,
+      file,
+      previewUrl: file ? URL.createObjectURL(file) : undefined
+    });
+  };
+
   // Reset form state
   const resetForm = () => {
     setNewTemplate({ name: '', mappingFields: [] });
-    setNewField('');
   };
 
   // Handle form submission
@@ -116,94 +99,17 @@ const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
             />
           </div>
           
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Fichier PDF
-            </label>
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                isDragActive ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-primary/50'
-              }`}
-            >
-              <input {...getInputProps()} />
-              
-              {newTemplate.file ? (
-                <div className="flex items-center justify-center space-x-2">
-                  <FileText className="h-6 w-6 text-primary" />
-                  <span className="font-medium">{newTemplate.file.name}</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="ml-2 h-7 w-7 p-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setNewTemplate({ ...newTemplate, file: undefined, previewUrl: undefined });
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div>
-                  <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
-                  <p className="text-sm">
-                    Glissez-déposez votre fichier PDF ici ou cliquez pour le sélectionner
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Format accepté: PDF
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+          <TemplateFileDropzone 
+            file={newTemplate.file}
+            onFileChange={handleFileChange}
+            previewUrl={newTemplate.previewUrl}
+          />
           
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Champs à mapper
-            </label>
-            <div className="flex space-x-2">
-              <Input
-                value={newField}
-                onChange={(e) => setNewField(e.target.value)}
-                placeholder="Nom du champ (ex: DATE ECHEANCE)"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addField();
-                  }
-                }}
-              />
-              <Button type="button" onClick={addField}>Ajouter</Button>
-            </div>
-            
-            <div className="mt-3 flex flex-wrap gap-2">
-              {newTemplate.mappingFields.map((field, index) => (
-                <div
-                  key={index}
-                  className="bg-slate-100 px-3 py-1 rounded-full text-sm flex items-center"
-                >
-                  <span>{field}</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="ml-1 h-5 w-5 p-0"
-                    onClick={() => removeField(field)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-            
-            {newTemplate.mappingFields.length === 0 && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Ajoutez les noms des champs de vos fichiers Excel que vous souhaitez remplacer dans le PDF.
-              </p>
-            )}
-          </div>
+          <FieldMappingSection 
+            mappingFields={newTemplate.mappingFields}
+            onAddField={addField}
+            onRemoveField={removeField}
+          />
         </div>
         
         <DialogFooter>
