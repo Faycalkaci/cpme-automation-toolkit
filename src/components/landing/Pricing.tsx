@@ -9,7 +9,8 @@ const DISCOUNT_PERCENTAGE = 20;
 const prices = {
   standard: {
     monthly: 49,
-    annual: 49 * 12 * (1 - DISCOUNT_PERCENTAGE / 100)
+    annual: 49 * 12 * (1 - DISCOUNT_PERCENTAGE / 100),
+    checkoutUrl: 'https://buy.stripe.com/test_cN29DvglM0yl5kA9AA'
   },
   pro: {
     monthly: 99,
@@ -65,7 +66,8 @@ const Pricing = () => {
               title: "Licence Standard",
               price: billingCycle === 'monthly' ? prices.standard.monthly : prices.standard.annual / 12,
               period: billingCycle === 'monthly' ? "par mois" : "par mois, facturé annuellement",
-              features: ["Jusqu'à 3 utilisateurs", "500 documents par mois", "Modèles prédéfinis", "Support par email"]
+              features: ["Jusqu'à 3 utilisateurs", "500 documents par mois", "Modèles prédéfinis", "Support par email"],
+              checkoutUrl: prices.standard.checkoutUrl
             }, 
             {
               title: "Licence Pro",
@@ -108,9 +110,19 @@ const Pricing = () => {
                     </li>
                   ))}
                 </ul>
-                <Button className="w-full mt-8" variant={plan.popular ? "default" : "outline"}>
-                  Sélectionner
-                </Button>
+                {plan.checkoutUrl ? (
+                  <Button 
+                    className="w-full mt-8" 
+                    variant={plan.popular ? "default" : "outline"}
+                    asChild
+                  >
+                    <a href={plan.checkoutUrl} target="_blank" rel="noopener noreferrer">Souscrire maintenant</a>
+                  </Button>
+                ) : (
+                  <Button className="w-full mt-8" variant={plan.popular ? "default" : "outline"}>
+                    Sélectionner
+                  </Button>
+                )}
               </div>
             </motion.div>
           ))}
