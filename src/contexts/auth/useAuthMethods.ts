@@ -16,7 +16,7 @@ export const useAuthMethods = (
     setIsLoading(true);
     try {
       // Connexion via Firebase Auth
-      await firebaseAuth.loginWithEmail(email, password);
+      const result = await firebaseAuth.loginWithEmail(email, password);
       
       // La mise à jour de l'utilisateur se fait via l'effet useEffect qui écoute les changements Firebase
       
@@ -24,6 +24,8 @@ export const useAuthMethods = (
         title: "Connexion réussie",
         description: "Vous êtes maintenant connecté",
       });
+      
+      return result;
     } catch (error) {
       console.error('Erreur de connexion:', error);
       toast({

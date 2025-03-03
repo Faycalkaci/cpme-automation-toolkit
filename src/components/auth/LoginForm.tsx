@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,10 +13,20 @@ import { loginFormSchema, LoginFormValues } from '@/pages/auth/loginSchema';
 import { useAuth } from '@/contexts/AuthContext';
 import { firestoreService } from '@/services/firebase/firestoreService';
 import { Timestamp } from 'firebase/firestore';
+import { Captcha } from './Captcha';
+import { rateLimitService } from '@/services/rateLimitService';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle, Shield, Lock } from 'lucide-react';
 
 export const LoginForm: React.FC = () => {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [attemptsLeft, setAttemptsLeft] = useState(5);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [showCaptcha, setShowCaptcha] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -26,31 +36,135 @@ export const LoginForm: React.FC = () => {
     },
   });
 
+  // Vérifier le statut de blocage au chargement
+  useEffect(() => {
+    const checkRateLimit = () => {
+      const blocked = rateLimitService.isBlocked();
+      setIsBlocked(blocked);
+      
+      if (blocked) {
+        const remaining = rateLimitService.getTimeRemaining();
+        setTimeRemaining(remaining);
+      }
+    };
+    
+    checkRateLimit();
+    
+    // Afficher le captcha après 3 tentatives
+    const rateLimitData = JSON.parse(localStorage.getItem('auth-rate-limit') || '{"attempts":0}');
+    setShowCaptcha(rateLimitData.attempts >= 2);
+    
+    // Mettre à jour le compteur toutes les secondes
+    const timer = setInterval(() => {
+      if (rateLimitService.isBlocked()) {
+        setTimeRemaining(rateLimitService.getTimeRemaining());
+      } else if (isBlocked) {
+        setIsBlocked(false);
+      }
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [isBlocked]);
+
+  // Formatter le temps restant
+  const formatTimeRemaining = () => {
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   const onSubmit = async (data: LoginFormValues) => {
+    setLoginError(null);
+    
+    // Vérifier si l'utilisateur est bloqué
+    if (isBlocked) {
+      return;
+    }
+    
+    // Vérifier si le captcha est requis et validé
+    if (showCaptcha && !captchaVerified) {
+      setLoginError("Veuillez valider le captcha avant de vous connecter.");
+      return;
+    }
+    
     try {
-      // Login with Firebase Auth
-      await login(data.email, data.password);
+      // Enregistrer une tentative
+      const rateLimit = rateLimitService.recordAttempt();
+      setAttemptsLeft(rateLimit.attemptsLeft);
       
-      // Get the user profile after login
-      const userProfile = await firestoreService.users.getByEmail(data.email);
-      
-      if (userProfile) {
-        // Update user profile with last login info
-        await firestoreService.users.update(userProfile.id!, {
-          lastLogin: Timestamp.now(),
-          lastLocation: userProfile.lastLocation || ''
-        });
+      if (rateLimit.blocked) {
+        setIsBlocked(true);
+        setTimeRemaining(rateLimitService.getTimeRemaining());
+        return;
       }
       
-      navigate('/dashboard');
-    } catch (error) {
+      // Login avec Firebase Auth
+      const loginResult = await login(data.email, data.password);
+      
+      // Si la connexion est réussie, réinitialiser la limitation
+      if (loginResult) {
+        rateLimitService.resetOnSuccess();
+        
+        // Mise à jour du profil utilisateur
+        const userProfile = await firestoreService.users.getByEmail(data.email);
+        
+        if (userProfile) {
+          // Mettre à jour les informations de dernière connexion
+          await firestoreService.users.update(userProfile.id!, {
+            lastLogin: Timestamp.now(),
+            lastLocation: userProfile.lastLocation || ''
+          });
+        }
+        
+        navigate('/dashboard');
+      }
+    } catch (error: any) {
       console.error('Login error:', error);
+      setLoginError(error.message || "Erreur lors de la connexion. Vérifiez vos identifiants.");
+      
+      // Activer le captcha après 2 tentatives échouées
+      const rateLimitData = JSON.parse(localStorage.getItem('auth-rate-limit') || '{"attempts":0}');
+      if (rateLimitData.attempts >= 2) {
+        setShowCaptcha(true);
+      }
     }
+  };
+
+  const handleCaptchaVerify = (success: boolean) => {
+    setCaptchaVerified(success);
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {loginError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erreur de connexion</AlertTitle>
+            <AlertDescription>{loginError}</AlertDescription>
+          </Alert>
+        )}
+        
+        {isBlocked && (
+          <Alert variant="destructive">
+            <Lock className="h-4 w-4" />
+            <AlertTitle>Compte temporairement bloqué</AlertTitle>
+            <AlertDescription>
+              Trop de tentatives de connexion. Veuillez réessayer dans {formatTimeRemaining()}.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {!isBlocked && attemptsLeft < 3 && (
+          <Alert>
+            <Shield className="h-4 w-4" />
+            <AlertTitle>Attention</AlertTitle>
+            <AlertDescription>
+              Il vous reste {attemptsLeft} tentative{attemptsLeft > 1 ? 's' : ''} avant le blocage temporaire du compte.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <FormField
           control={form.control}
           name="email"
@@ -63,6 +177,7 @@ export const LoginForm: React.FC = () => {
                   type="email" 
                   autoComplete="email"
                   {...field} 
+                  disabled={isBlocked}
                 />
               </FormControl>
               <FormMessage />
@@ -77,12 +192,19 @@ export const LoginForm: React.FC = () => {
             <FormItem>
               <FormLabel>Mot de passe</FormLabel>
               <FormControl>
-                <PasswordInput {...field} />
+                <PasswordInput {...field} disabled={isBlocked} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {showCaptcha && (
+          <Captcha 
+            onVerify={handleCaptchaVerify} 
+            isRequired={true} 
+          />
+        )}
 
         <div className="flex justify-end">
           <Link to="/forgot-password" className="text-sm text-primary hover:underline">
@@ -90,7 +212,11 @@ export const LoginForm: React.FC = () => {
           </Link>
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isLoading || isBlocked || (showCaptcha && !captchaVerified)}
+        >
           {isLoading ? (
             <>
               <Spinner size="sm" className="mr-2" />
