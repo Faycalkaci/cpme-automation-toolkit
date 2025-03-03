@@ -6,19 +6,24 @@ import { useSuspendLicense } from './hooks/useSuspendLicense';
 import { License } from './types';
 
 export const useLicenses = () => {
-  const { licenses, setLicenses, isLoading } = useFetchLicenses();
-  const { addLicense, isAdding } = useAddLicense(licenses, setLicenses);
-  const { renewLicense, isRenewing } = useRenewLicense(licenses, setLicenses);
-  const { suspendLicense, isSuspending } = useSuspendLicense(licenses, setLicenses);
+  const { licenses, setLicenses, isLoading, error, refreshLicenses } = useFetchLicenses();
+  const { addLicense, isAdding, addError } = useAddLicense(licenses, setLicenses);
+  const { renewLicense, isRenewing, renewError } = useRenewLicense(licenses, setLicenses);
+  const { suspendLicense, isSuspending, suspensionError } = useSuspendLicense(licenses, setLicenses);
 
   return {
     licenses,
     isLoading,
+    error,
     isAdding,
     isRenewing,
     isSuspending,
+    addError,
+    renewError,
+    suspensionError,
     addLicense,
     renewLicense,
-    suspendLicense
+    suspendLicense,
+    refreshLicenses
   };
 };

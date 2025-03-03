@@ -10,10 +10,31 @@ export const useAddLicense = (
   setLicenses: React.Dispatch<React.SetStateAction<License[]>>
 ) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
 
   const addLicense = async (license: Omit<License, 'id' | 'status' | 'users'>) => {
     setIsAdding(true);
+    setAddError(null);
+    
     try {
+      if (!license.cpme || license.cpme.trim() === '') {
+        throw new Error('missing-cpme');
+      }
+      
+      if (!license.plan) {
+        throw new Error('missing-plan');
+      }
+      
+      // Check if a license with the same CPME already exists
+      const existingLicense = licenses.find(l => 
+        l.cpme?.toLowerCase() === license.cpme?.toLowerCase() && 
+        l.status !== 'expired'
+      );
+      
+      if (existingLicense) {
+        throw new Error('duplicate-cpme');
+      }
+      
       // Update max users based on plan
       let maxUsers = 1; // Default for standard and pro
       if (license.plan === 'enterprise') {
@@ -43,6 +64,10 @@ export const useAddLicense = (
         console.log(`Creating a Stripe subscription for plan: ${planId}`);
       } catch (stripeError) {
         console.error('Error creating Stripe subscription:', stripeError);
+        // We continue without throwing as the Firestore creation succeeded
+        toast.warning('Licence créée, mais problème avec Stripe', {
+          description: 'L\'abonnement de paiement n\'a pas pu être configuré automatiquement.'
+        });
       }
       
       const createdLicense = { ...newLicense, id: licenseId };
@@ -50,14 +75,36 @@ export const useAddLicense = (
       // Update local state
       setLicenses([...licenses, createdLicense]);
       
-      toast.success('License added successfully', {
-        description: `The license for "${newLicense.cpme}" has been created.`
+      toast.success('Licence ajoutée avec succès', {
+        description: `La licence pour "${newLicense.cpme}" a été créée.`
       });
 
       return createdLicense;
     } catch (error) {
       console.error('Error creating license:', error);
-      toast.error('Error creating license');
+      
+      let errorMessage = 'Erreur lors de la création de la licence';
+      if (error instanceof Error) {
+        setAddError(error.message);
+        
+        // Handle specific error cases
+        if (error.message === 'missing-cpme') {
+          errorMessage = 'Le nom de la CPME est obligatoire';
+        } else if (error.message === 'missing-plan') {
+          errorMessage = 'Le plan de la licence est obligatoire';
+        } else if (error.message === 'duplicate-cpme') {
+          errorMessage = 'Une licence active existe déjà pour cette CPME';
+        } else if (error.message.includes('permission-denied')) {
+          errorMessage = 'Vous n\'avez pas les droits nécessaires pour créer une licence';
+        } else if (error.message.includes('network')) {
+          errorMessage = 'Problème de connexion. Vérifiez votre connexion internet et réessayez';
+        }
+      }
+      
+      toast.error(errorMessage, {
+        description: 'Veuillez vérifier les informations saisies et réessayer.'
+      });
+      
       throw error;
     } finally {
       setIsAdding(false);
@@ -66,6 +113,7 @@ export const useAddLicense = (
 
   return {
     addLicense,
-    isAdding
+    isAdding,
+    addError
   };
 };
