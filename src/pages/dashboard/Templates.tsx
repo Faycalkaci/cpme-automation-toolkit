@@ -1,42 +1,30 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FileText, Download, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { templateStorage } from '@/services/templateStorage';
+import { useTemplates } from '@/hooks/useTemplates';
+import { Template } from '@/components/admin/templates/types';
 
 const Templates = () => {
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [templateToDelete, setTemplateToDelete] = useState<any | null>(null);
+  const [templateToDelete, setTemplateToDelete] = useState<Template | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'super-admin';
-
-  // Load templates from storage on component mount
-  useEffect(() => {
-    const loadTemplates = async () => {
-      try {
-        // Seulement charger les templates partagés (pas les templates d'administration)
-        const storedTemplates = await templateStorage.getTemplates(false);
-        setTemplates(storedTemplates);
-      } catch (error) {
-        console.error('Error loading templates:', error);
-        toast.error('Erreur lors du chargement des modèles');
-      }
-    };
-    
-    loadTemplates();
-  }, []);
+  
+  // Use the new useTemplates hook - set isAdmin to false to get only shared templates
+  const { templates, isLoading, deleteTemplate } = useTemplates(false);
 
   // Delete a template
-  const deleteTemplate = async (templateId: string) => {
+  const handleDeleteTemplate = async () => {
+    if (!templateToDelete) return;
+    
     try {
-      await templateStorage.deleteTemplate(templateId, false);
-      setTemplates(templates.filter(t => t.id !== templateId));
+      await deleteTemplate(templateToDelete.id);
       setShowDeleteDialog(false);
       setTemplateToDelete(null);
       toast.success('Modèle supprimé avec succès');
@@ -46,7 +34,7 @@ const Templates = () => {
     }
   };
 
-  const openDeleteDialog = (template: any) => {
+  const openDeleteDialog = (template: Template) => {
     setTemplateToDelete(template);
     setShowDeleteDialog(true);
   };
@@ -60,10 +48,13 @@ const Templates = () => {
             Consultez les modèles de documents disponibles pour générer vos PDF
           </p>
         </div>
-        {/* Le bouton d'ajout a été retiré comme demandé */}
       </div>
 
-      {templates.length === 0 ? (
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      ) : templates.length === 0 ? (
         <div className="border border-dashed rounded-lg p-12 text-center space-y-4">
           <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
           <h3 className="text-lg font-medium">Aucun modèle disponible</h3>
@@ -88,24 +79,24 @@ const Templates = () => {
                 <div className="p-4">
                   <h3 className="font-medium text-lg mb-1">{template.name}</h3>
                   <p className="text-sm text-muted-foreground mb-3">
-                    {template.fields?.length || template.mappingFields?.length || 0} champs mappés
+                    {template.fields?.length || 0} champs mappés
                   </p>
                   
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {(template.fields || template.mappingFields || []).slice(0, 5).map((field: string, index: number) => (
+                    {(template.fields || []).slice(0, 5).map((field: string, index: number) => (
                       <span key={index} className="text-xs bg-slate-100 px-2 py-1 rounded">
                         {field}
                       </span>
                     ))}
-                    {(template.fields?.length || template.mappingFields?.length || 0) > 5 && (
+                    {(template.fields?.length || 0) > 5 && (
                       <span className="text-xs bg-slate-100 px-2 py-1 rounded">
-                        +{(template.fields?.length || template.mappingFields?.length || 0) - 5}
+                        +{(template.fields?.length || 0) - 5}
                       </span>
                     )}
                   </div>
                   
                   <div className="flex items-center justify-between mt-2">
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => template.fileUrl && window.open(template.fileUrl, '_blank')}>
                       <Download className="h-4 w-4 mr-2" />
                       Télécharger
                     </Button>
@@ -148,7 +139,7 @@ const Templates = () => {
             </Button>
             <Button 
               variant="destructive" 
-              onClick={() => templateToDelete && deleteTemplate(templateToDelete.id)}
+              onClick={handleDeleteTemplate}
             >
               Supprimer
             </Button>
@@ -163,20 +154,6 @@ const Templates = () => {
           <p className="text-sm text-slate-600 mb-4">
             Pour ajouter de nouveaux modèles, utilisez la section "Modèles PDF" dans l'Administration.
           </p>
-          <div className="flex space-x-2">
-            <Button 
-              variant="destructive" 
-              onClick={async () => {
-                if (confirm('Êtes-vous sûr de vouloir supprimer tous les modèles ? Cette action est irréversible.')) {
-                  await templateStorage.clearTemplates(false);
-                  setTemplates([]);
-                  toast.success('Tous les modèles ont été supprimés');
-                }
-              }}
-            >
-              Supprimer tous les modèles
-            </Button>
-          </div>
         </div>
       )}
     </div>
