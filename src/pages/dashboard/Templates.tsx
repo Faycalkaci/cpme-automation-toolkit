@@ -1,16 +1,16 @@
-
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { FileText, Download, Search, Eye, Check } from 'lucide-react';
+import { FileText, Download, Search, Eye, Check, Upload } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 interface Template {
   id: string;
@@ -60,8 +60,85 @@ const Templates = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [newTemplate, setNewTemplate] = useState({
+    name: '',
+    description: '',
+    type: 'appel'
+  });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
-  // Filtrer les templates en fonction de l'onglet actif et du terme de recherche
+  const handleFileDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') {
+      setSelectedFile(file);
+    } else {
+      toast({
+        title: "Format non supporté",
+        description: "Veuillez importer un fichier PDF uniquement."
+      });
+    }
+  }, [toast]);
+  
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      setSelectedFile(file);
+    } else {
+      toast({
+        title: "Format non supporté",
+        description: "Veuillez importer un fichier PDF uniquement."
+      });
+    }
+  };
+  
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+  };
+  
+  const handleAddTemplate = () => {
+    if (!newTemplate.name) {
+      toast({
+        title: "Nom requis",
+        description: "Veuillez saisir un nom pour le template."
+      });
+      return;
+    }
+    
+    if (!selectedFile) {
+      toast({
+        title: "Fichier requis",
+        description: "Veuillez sélectionner un fichier PDF."
+      });
+      return;
+    }
+    
+    const newTemplateId = Date.now().toString();
+    const newTemplateObj: Template = {
+      id: newTemplateId,
+      name: newTemplate.name,
+      description: newTemplate.description || `Template ${newTemplate.type}`,
+      type: newTemplate.type as 'appel' | 'rappel' | 'facture',
+      thumbnailUrl: URL.createObjectURL(selectedFile),
+      fields: ['nom', 'adresse', 'montant', 'date', 'référence'],
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    
+    setTemplates([...templates, newTemplateObj]);
+    setIsEditDialogOpen(false);
+    setNewTemplate({
+      name: '',
+      description: '',
+      type: 'appel'
+    });
+    setSelectedFile(null);
+    
+    toast({
+      title: "Template ajouté",
+      description: "Le nouveau template a été ajouté avec succès."
+    });
+  };
+  
   const filteredTemplates = templates.filter(template => {
     const matchesTab = activeTab === 'all' || template.type === activeTab;
     const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -90,7 +167,7 @@ const Templates = () => {
     });
   };
   
-  const canEditTemplates = user?.role === 'super-admin' || user?.role === 'admin';
+  const canEditTemplates = user?.role === 'super-admin' || user?.role === 'admin' || user?.role === 'user';
   
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -130,12 +207,30 @@ const Templates = () => {
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
                         <Label htmlFor="template-name">Nom du template</Label>
-                        <Input id="template-name" placeholder="Nom du template" />
+                        <Input 
+                          id="template-name" 
+                          placeholder="Nom du template" 
+                          value={newTemplate.name}
+                          onChange={(e) => setNewTemplate({...newTemplate, name: e.target.value})}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="template-description">Description (optionnelle)</Label>
+                        <Input 
+                          id="template-description" 
+                          placeholder="Description du template" 
+                          value={newTemplate.description}
+                          onChange={(e) => setNewTemplate({...newTemplate, description: e.target.value})}
+                        />
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="template-type">Type de document</Label>
-                        <Select defaultValue="appel">
+                        <Select 
+                          value={newTemplate.type}
+                          onValueChange={(value) => setNewTemplate({...newTemplate, type: value})}
+                        >
                           <SelectTrigger id="template-type">
                             <SelectValue placeholder="Sélectionner un type" />
                           </SelectTrigger>
@@ -149,36 +244,63 @@ const Templates = () => {
                       
                       <div className="space-y-2">
                         <Label htmlFor="template-file">Fichier PDF</Label>
-                        <div className="border-2 border-dashed border-slate-200 rounded-md p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer">
-                          <FileText className="h-8 w-8 text-slate-400 mx-auto mb-2" />
-                          <p className="text-sm text-slate-600 mb-2">Glissez-déposez votre fichier PDF ici</p>
-                          <p className="text-xs text-slate-500 mb-4">ou</p>
-                          <Button size="sm" asChild>
-                            <label>
-                              Parcourir
-                              <input
-                                type="file"
-                                id="template-file"
-                                accept=".pdf"
-                                className="hidden"
-                              />
-                            </label>
-                          </Button>
+                        <div 
+                          className={`border-2 border-dashed border-slate-200 rounded-md p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer ${selectedFile ? 'border-primary bg-primary/5' : ''}`}
+                          onDrop={handleFileDrop}
+                          onDragOver={handleDragOver}
+                        >
+                          {selectedFile ? (
+                            <div className="flex flex-col items-center">
+                              <FileText className="h-8 w-8 text-primary mx-auto mb-2" />
+                              <p className="text-sm text-slate-600 mb-2">{selectedFile.name}</p>
+                              <p className="text-xs text-slate-500">
+                                {Math.round(selectedFile.size / 1024)} Ko
+                              </p>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="mt-2"
+                                onClick={() => setSelectedFile(null)}
+                              >
+                                Supprimer
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <FileText className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+                              <p className="text-sm text-slate-600 mb-2">Glissez-déposez votre fichier PDF ici</p>
+                              <p className="text-xs text-slate-500 mb-4">ou</p>
+                              <Button size="sm" asChild>
+                                <label>
+                                  <Upload className="h-4 w-4 mr-2" />
+                                  Parcourir
+                                  <input
+                                    type="file"
+                                    id="template-file"
+                                    accept=".pdf"
+                                    className="hidden"
+                                    onChange={handleFileSelect}
+                                  />
+                                </label>
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
                     
                     <DialogFooter>
-                      <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                      <Button type="button" variant="outline" onClick={() => {
+                        setIsEditDialogOpen(false);
+                        setSelectedFile(null);
+                      }}>
                         Annuler
                       </Button>
-                      <Button type="button" onClick={() => {
-                        toast({
-                          title: "Template ajouté",
-                          description: "Le nouveau template a été ajouté avec succès."
-                        });
-                        setIsEditDialogOpen(false);
-                      }}>
+                      <Button 
+                        type="button" 
+                        onClick={handleAddTemplate}
+                        disabled={!newTemplate.name || !selectedFile}
+                      >
                         Ajouter
                       </Button>
                     </DialogFooter>
@@ -280,7 +402,6 @@ const Templates = () => {
           </CardContent>
         </Card>
         
-        {/* Aperçu du template */}
         {previewTemplate && (
           <Dialog open={!!previewTemplate} onOpenChange={(open) => !open && setPreviewTemplate(null)}>
             <DialogContent className="max-w-4xl">

@@ -15,7 +15,8 @@ import {
   CreditCard, 
   ShieldCheck, 
   BarChart, 
-  Mail
+  Mail,
+  Lock
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -48,6 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, isMobile }) => {
     { name: 'Facturation', path: '/billing', icon: CreditCard, roles: ['admin', 'super-admin'] },
     { name: 'Licences', path: '/licenses', icon: ShieldCheck, roles: ['super-admin'] },
     { name: 'Statistiques', path: '/statistics', icon: BarChart, roles: ['super-admin'] },
+    { name: 'Administration', path: '/admin', icon: Lock, roles: ['super-admin'] },
     { name: 'Paramètres', path: '/settings', icon: Settings },
   ];
 

@@ -15,14 +15,8 @@ export const TutorialGuide = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
-  useEffect(() => {
-    // Vérifier si c'est la première visite
-    const hasSeenTutorial = localStorage.getItem('cpme-tutorial-completed');
-    if (!hasSeenTutorial) {
-      setShowTutorial(true);
-    }
-  }, []);
-
+  // Removed the useEffect to automatically show the tutorial since we're removing the Onboarding page
+  
   const steps: TutorialStep[] = [
     {
       title: "Bienvenue sur CPME Tool",
@@ -77,6 +71,12 @@ export const TutorialGuide = () => {
     toast.success('Tutoriel terminé !', { 
       description: 'Vous pouvez le revoir à tout moment depuis les paramètres.' 
     });
+  };
+  
+  // Manual trigger function for the tutorial
+  const startTutorial = () => {
+    setCurrentStep(0);
+    setShowTutorial(true);
   };
   
   const resetTutorial = () => {

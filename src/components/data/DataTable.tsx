@@ -4,16 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Download, FileText, Mail, Filter, X, CheckSquare, Square } from 'lucide-react';
+import { Search, Download, FileText, Mail, X, CheckSquare, Square } from 'lucide-react';
 import { toast } from 'sonner';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
 
 interface DataTableProps {
   data: any[];
@@ -178,34 +170,35 @@ const DataTable: React.FC<DataTableProps> = ({
             {allSelected ? 'Désélectionner tout' : 'Sélectionner tout'}
           </Button>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline"
-                disabled={selectedCount === 0}
-                className="flex-shrink-0"
-              >
-                <Filter className="mr-2 h-4 w-4" />
-                Actions
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Options</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleGeneratePdf}>
-                <FileText className="mr-2 h-4 w-4" />
-                Générer des PDF ({selectedCount})
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleSendEmail}>
-                <Mail className="mr-2 h-4 w-4" />
-                Envoyer par email ({selectedCount})
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportCsv}>
-                <Download className="mr-2 h-4 w-4" />
-                Exporter ({selectedCount})
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Removed the dropdown menu and added separate buttons */}
+          <Button 
+            onClick={handleGeneratePdf}
+            disabled={selectedCount === 0}
+            className="flex-shrink-0"
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            Générer PDF
+          </Button>
+          
+          <Button 
+            onClick={handleSendEmail}
+            disabled={selectedCount === 0}
+            className="flex-shrink-0"
+            variant="outline"
+          >
+            <Mail className="mr-2 h-4 w-4" />
+            Envoyer email
+          </Button>
+          
+          <Button 
+            onClick={handleExportCsv}
+            disabled={selectedCount === 0}
+            className="flex-shrink-0"
+            variant="outline"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Exporter
+          </Button>
         </div>
       </div>
       
@@ -275,6 +268,15 @@ const DataTable: React.FC<DataTableProps> = ({
             >
               <Mail className="mr-2 h-4 w-4" />
               Envoyer par email
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={handleExportCsv}
+              disabled={selectedCount === 0}
+              className="flex-shrink-0"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Exporter
             </Button>
           </div>
         </div>

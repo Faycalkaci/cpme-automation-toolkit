@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,8 +38,8 @@ const LicenseManager: React.FC = () => {
       cpme: 'CPME Seine-Saint-Denis (93)',
       plan: 'enterprise',
       status: 'active',
-      users: 8,
-      maxUsers: 25,
+      users: 3,
+      maxUsers: 3,
       startDate: '2023-01-15',
       endDate: '2024-01-15'
     },
@@ -49,8 +48,8 @@ const LicenseManager: React.FC = () => {
       cpme: 'CPME Paris (75)',
       plan: 'pro',
       status: 'active',
-      users: 5,
-      maxUsers: 10,
+      users: 1,
+      maxUsers: 1,
       startDate: '2023-03-22',
       endDate: '2024-03-22'
     },
@@ -59,8 +58,8 @@ const LicenseManager: React.FC = () => {
       cpme: 'CPME Val-de-Marne (94)',
       plan: 'standard',
       status: 'expired',
-      users: 2,
-      maxUsers: 3,
+      users: 1,
+      maxUsers: 1,
       startDate: '2023-02-10',
       endDate: '2023-12-10'
     },
@@ -70,7 +69,7 @@ const LicenseManager: React.FC = () => {
       plan: 'pro',
       status: 'pending',
       users: 0,
-      maxUsers: 10,
+      maxUsers: 1,
       startDate: '2024-01-01',
       endDate: '2025-01-01'
     }
@@ -80,19 +79,25 @@ const LicenseManager: React.FC = () => {
   const [newLicense, setNewLicense] = useState<Partial<License>>({
     cpme: '',
     plan: 'standard',
-    maxUsers: 3,
+    maxUsers: 1,
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
   });
   
   const handleAddLicense = () => {
+    // Update max users based on plan
+    let maxUsers = 1; // Default for standard and pro
+    if (newLicense.plan === 'enterprise') {
+      maxUsers = 3;
+    }
+    
     const license: License = {
       id: Date.now().toString(),
       cpme: newLicense.cpme || '',
       plan: newLicense.plan as 'standard' | 'pro' | 'enterprise',
       status: 'active',
       users: 0,
-      maxUsers: newLicense.maxUsers || 3,
+      maxUsers: maxUsers,
       startDate: newLicense.startDate || new Date().toISOString().split('T')[0],
       endDate: newLicense.endDate || new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
     };
@@ -102,7 +107,7 @@ const LicenseManager: React.FC = () => {
     setNewLicense({
       cpme: '',
       plan: 'standard',
-      maxUsers: 3,
+      maxUsers: 1,
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
     });
@@ -271,7 +276,7 @@ const LicenseManager: React.FC = () => {
                   setNewLicense({
                     ...newLicense, 
                     plan: value,
-                    maxUsers: value === 'standard' ? 3 : value === 'pro' ? 10 : 25
+                    maxUsers: value === 'standard' ? 1 : value === 'pro' ? 1 : 3
                   })
                 }
               >
@@ -279,9 +284,9 @@ const LicenseManager: React.FC = () => {
                   <SelectValue placeholder="Sélectionnez un plan" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="standard">Standard (3 utilisateurs)</SelectItem>
-                  <SelectItem value="pro">Pro (10 utilisateurs)</SelectItem>
-                  <SelectItem value="enterprise">Enterprise (25 utilisateurs)</SelectItem>
+                  <SelectItem value="standard">Standard (1 utilisateurs)</SelectItem>
+                  <SelectItem value="pro">Pro (1 utilisateurs)</SelectItem>
+                  <SelectItem value="enterprise">Enterprise (3 utilisateurs)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
