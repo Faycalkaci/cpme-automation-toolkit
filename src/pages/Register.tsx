@@ -27,6 +27,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Check } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Schema de validation pour le formulaire d'inscription
 const registerFormSchema = z.object({
@@ -48,8 +49,8 @@ const registerFormSchema = z.object({
   phoneNumber: z.string().min(10, {
     message: "Veuillez entrer un numéro de téléphone valide.",
   }),
-  acceptTerms: z.literal(true, {
-    errorMap: () => ({ message: "Vous devez accepter les conditions d'utilisation." }),
+  acceptTerms: z.boolean().refine(val => val === true, {
+    message: "Vous devez accepter les conditions d'utilisation."
   }),
 });
 
@@ -58,6 +59,7 @@ type RegisterFormValues = z.infer<typeof registerFormSchema>;
 const Register = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { register } = useAuth();
   
   // Animation variants
   const containerVariants = {
@@ -103,8 +105,8 @@ const Register = () => {
     setIsSubmitting(true);
     
     try {
-      // Simuler une requête API avec un délai
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Appel à l'API d'inscription
+      await register(data.email, data.password, `${data.firstName} ${data.lastName}`);
       
       // Afficher un toast de succès
       toast.success('Compte créé avec succès!', {
