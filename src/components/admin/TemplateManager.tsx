@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { FileUp, Eye, Trash2, Check, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Template = {
   id: string;
@@ -15,9 +16,12 @@ type Template = {
   fields: string[];
   fileUrl: string;
   file?: File;
+  savedBy?: string;
+  permanent?: boolean;
 };
 
 const TemplateManager: React.FC = () => {
+  const { user } = useAuth();
   const [templates, setTemplates] = useState<Template[]>([
     {
       id: '1',
@@ -25,7 +29,9 @@ const TemplateManager: React.FC = () => {
       type: 'appel',
       date: '2023-06-15',
       fields: ['Entreprise', 'Adresse', 'Code Postal', 'Ville', 'Email', 'Montant'],
-      fileUrl: '/templates/appel-cotisation.pdf'
+      fileUrl: '/templates/appel-cotisation.pdf',
+      permanent: true,
+      savedBy: 'system'
     },
     {
       id: '2',
@@ -33,7 +39,9 @@ const TemplateManager: React.FC = () => {
       type: 'facture',
       date: '2023-08-20',
       fields: ['Entreprise', 'Adresse', 'Code Postal', 'Ville', 'Email', 'Référence', 'Date', 'Montant HT', 'TVA', 'Total TTC'],
-      fileUrl: '/templates/facture.pdf'
+      fileUrl: '/templates/facture.pdf',
+      permanent: true,
+      savedBy: 'system'
     },
     {
       id: '3',
@@ -41,7 +49,9 @@ const TemplateManager: React.FC = () => {
       type: 'rappel',
       date: '2023-09-05',
       fields: ['Entreprise', 'Adresse', 'Code Postal', 'Ville', 'Email', 'Montant', 'Date échéance'],
-      fileUrl: '/templates/rappel-cotisation.pdf'
+      fileUrl: '/templates/rappel-cotisation.pdf',
+      permanent: true,
+      savedBy: 'system'
     }
   ]);
   
@@ -50,11 +60,15 @@ const TemplateManager: React.FC = () => {
   const [templateToDelete, setTemplateToDelete] = useState<Template | null>(null);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [templateToPreview, setTemplateToPreview] = useState<Template | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [templateToSave, setTemplateToSave] = useState<Template | null>(null);
   
   const [newTemplateName, setNewTemplateName] = useState('');
   const [newTemplateType, setNewTemplateType] = useState<'facture' | 'appel' | 'rappel' | 'autre'>('autre');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const canSaveTemplate = user && (user.role === 'admin' || user.role === 'super-admin' || user.role === 'user');
   
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -94,7 +108,8 @@ const TemplateManager: React.FC = () => {
       date: new Date().toISOString().split('T')[0],
       fields: ['Entreprise', 'Email'], // Default fields, would be extracted from PDF
       fileUrl: URL.createObjectURL(selectedFile),
-      file: selectedFile
+      file: selectedFile,
+      savedBy: user?.name || user?.email || 'Anonymous'
     };
     
     setTemplates([...templates, newTemplate]);
@@ -110,12 +125,39 @@ const TemplateManager: React.FC = () => {
   
   const handleDeleteTemplate = () => {
     if (templateToDelete) {
+      if (templateToDelete.permanent) {
+        toast.error('Action non autorisée', {
+          description: 'Vous ne pouvez pas supprimer un modèle permanent.'
+        });
+        setShowDeleteDialog(false);
+        setTemplateToDelete(null);
+        return;
+      }
+      
       setTemplates(templates.filter(t => t.id !== templateToDelete.id));
       setShowDeleteDialog(false);
       setTemplateToDelete(null);
       
       toast.success('Modèle supprimé', {
         description: `Le modèle "${templateToDelete.name}" a été supprimé.`
+      });
+    }
+  };
+  
+  const handleSaveTemplatePermanently = () => {
+    if (templateToSave) {
+      const updatedTemplates = templates.map(template => 
+        template.id === templateToSave.id 
+          ? { ...template, permanent: true, savedBy: user?.name || user?.email || 'Anonymous' } 
+          : template
+      );
+      
+      setTemplates(updatedTemplates);
+      setShowSaveDialog(false);
+      setTemplateToSave(null);
+      
+      toast.success('Modèle sauvegardé définitivement', {
+        description: `Le modèle "${templateToSave.name}" est maintenant disponible pour tous les utilisateurs.`
       });
     }
   };
@@ -130,14 +172,34 @@ const TemplateManager: React.FC = () => {
     setShowPreviewDialog(true);
   };
   
+  const openSaveDialog = (template: Template) => {
+    if (!canSaveTemplate) {
+      toast.error('Permission refusée', {
+        description: 'Vous n\'avez pas les droits pour sauvegarder définitivement un modèle.'
+      });
+      return;
+    }
+    
+    setTemplateToSave(template);
+    setShowSaveDialog(true);
+  };
+  
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    e.currentTarget.classList.add('border-primary', 'bg-primary/5');
+  };
+  
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('border-primary', 'bg-primary/5');
   };
   
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    e.currentTarget.classList.remove('border-primary', 'bg-primary/5');
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
@@ -171,12 +233,19 @@ const TemplateManager: React.FC = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {templates.map(template => (
-          <Card key={template.id} className="overflow-hidden">
-            <CardHeader className="bg-slate-50 pb-4">
-              <CardTitle className="flex items-center">
-                <FileText className="h-5 w-5 mr-2 text-primary" />
-                {template.name}
-              </CardTitle>
+          <Card key={template.id} className={`overflow-hidden ${template.permanent ? 'border-primary/40' : ''}`}>
+            <CardHeader className={`${template.permanent ? 'bg-primary/5' : 'bg-slate-50'} pb-4`}>
+              <div className="flex justify-between items-start">
+                <CardTitle className="flex items-center">
+                  <FileText className="h-5 w-5 mr-2 text-primary" />
+                  {template.name}
+                </CardTitle>
+                {template.permanent && (
+                  <span className="bg-primary/20 text-primary text-xs px-2 py-1 rounded-full">
+                    Permanent
+                  </span>
+                )}
+              </div>
               <CardDescription>
                 {template.type === 'facture' ? 'Modèle de facture' : 
                  template.type === 'appel' ? 'Modèle d\'appel de cotisation' :
@@ -202,14 +271,24 @@ const TemplateManager: React.FC = () => {
             </CardContent>
             <CardFooter className="flex justify-between border-t bg-slate-50 py-3">
               <div className="text-xs text-slate-500">
-                Ajouté le {new Date(template.date).toLocaleDateString('fr-FR')}
+                {template.savedBy ? `Par ${template.savedBy}` : 'Ajouté le'} {new Date(template.date).toLocaleDateString('fr-FR')}
               </div>
               <div className="flex space-x-2">
                 <Button variant="ghost" size="sm" onClick={() => openPreviewDialog(template)}>
                   <Eye className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => openDeleteDialog(template)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                {!template.permanent && canSaveTemplate && (
+                  <Button variant="ghost" size="sm" onClick={() => openSaveDialog(template)}>
+                    <Check className="h-4 w-4 text-green-600" />
+                  </Button>
+                )}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => openDeleteDialog(template)}
+                  disabled={template.permanent && user?.role !== 'super-admin'}
+                >
+                  <Trash2 className={`h-4 w-4 ${template.permanent ? 'text-slate-400' : 'text-destructive'}`} />
                 </Button>
               </div>
             </CardFooter>
@@ -287,6 +366,7 @@ const TemplateManager: React.FC = () => {
                   selectedFile ? 'border-green-500 bg-green-50' : 'border-slate-200 hover:border-primary/50'
                 }`}
                 onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
               >
                 <div className="text-center">
@@ -381,6 +461,38 @@ const TemplateManager: React.FC = () => {
             </Button>
             <Button variant="destructive" onClick={handleDeleteTemplate}>
               Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Save Permanently Dialog */}
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sauvegarder définitivement</DialogTitle>
+            <DialogDescription>
+              Ce modèle sera disponible pour tous les utilisateurs et ne pourra plus être supprimé facilement.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {templateToSave && (
+            <div className="py-4">
+              <p className="font-medium">{templateToSave.name}</p>
+              <p className="text-sm text-slate-500">
+                Type: {templateToSave.type === 'facture' ? 'Facture' : 
+                      templateToSave.type === 'appel' ? 'Appel de cotisation' :
+                      templateToSave.type === 'rappel' ? 'Rappel de cotisation' : 'Autre'}
+              </p>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
+              Annuler
+            </Button>
+            <Button variant="default" onClick={handleSaveTemplatePermanently}>
+              Sauvegarder définitivement
             </Button>
           </DialogFooter>
         </DialogContent>
