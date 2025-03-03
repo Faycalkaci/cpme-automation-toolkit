@@ -1,23 +1,21 @@
 
 import React from 'react';
 import { TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useDataTable } from './DataTableContext';
 
 const DataTableHeader: React.FC = () => {
-  const { headers, allSelected, toggleSelectAll } = useDataTable();
+  const { headers } = useDataTable();
   
   return (
     <TableHeader>
-      <TableRow>
-        <TableHead className="w-12 text-center">
-          <Checkbox 
-            checked={allSelected} 
-            onCheckedChange={toggleSelectAll}
-          />
+      <TableRow className="bg-primary/20">
+        <TableHead className="w-12 text-center font-semibold">
+          {/* Empty header cell for checkbox column */}
         </TableHead>
         {headers.map((header, index) => (
-          <TableHead key={index}>{header}</TableHead>
+          <TableHead key={index} className="font-semibold text-slate-800">
+            {header}
+          </TableHead>
         ))}
       </TableRow>
     </TableHeader>
