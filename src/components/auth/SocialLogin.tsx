@@ -7,6 +7,8 @@ import { firebaseAuth } from '@/services/firebase/firebaseService';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
+import { firestoreService } from '@/services/firebase/firestoreService';
+import { Timestamp } from 'firebase/firestore';
 
 export const SocialLogin: React.FC = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -19,8 +21,36 @@ export const SocialLogin: React.FC = () => {
     setDomainError(false);
     try {
       console.log("Tentative de connexion Google...");
-      await firebaseAuth.loginWithGoogle();
+      const user = await firebaseAuth.loginWithGoogle();
       console.log("Connexion réussie, redirection...");
+      
+      if (user && user.email) {
+        // Check if user profile exists
+        let userProfile = await firestoreService.users.getByEmail(user.email);
+        
+        // Create profile if it doesn't exist
+        if (!userProfile && user.email) {
+          const newUser = {
+            email: user.email,
+            name: user.displayName || user.email.split('@')[0],
+            role: 'user' as const,
+            devices: [],
+            lastLogin: Timestamp.now(),
+            lastLocation: ''
+          };
+          
+          const userId = await firestoreService.users.create(newUser);
+          console.log("Nouveau profil utilisateur créé:", userId);
+        } else if (userProfile) {
+          // Update existing profile
+          await firestoreService.users.update(userProfile.id!, {
+            lastLogin: Timestamp.now(),
+            lastLocation: userProfile.lastLocation || ''
+          });
+          console.log("Profil utilisateur mis à jour");
+        }
+      }
+      
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Google login error:', error);

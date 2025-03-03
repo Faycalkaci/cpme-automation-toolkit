@@ -11,6 +11,8 @@ import { PasswordInput } from './PasswordInput';
 import { DemoAccounts } from './DemoAccounts';
 import { loginFormSchema, LoginFormValues } from '@/pages/auth/loginSchema';
 import { useAuth } from '@/contexts/AuthContext';
+import { firestoreService } from '@/services/firebase/firestoreService';
+import { Timestamp } from 'firebase/firestore';
 
 export const LoginForm: React.FC = () => {
   const { login, isLoading } = useAuth();
@@ -26,7 +28,22 @@ export const LoginForm: React.FC = () => {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      await login(data.email, data.password);
+      // Login with Firebase Auth
+      const user = await login(data.email, data.password);
+      
+      // Update the user profile if login was successful
+      if (user) {
+        const userProfile = await firestoreService.users.getByEmail(data.email);
+        
+        if (userProfile) {
+          // Update user profile with last login info
+          await firestoreService.users.update(userProfile.id!, {
+            lastLogin: Timestamp.now(),
+            lastLocation: userProfile.lastLocation || ''
+          });
+        }
+      }
+      
       navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
@@ -55,7 +72,19 @@ export const LoginForm: React.FC = () => {
           )}
         />
 
-        <PasswordInput form={form} />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Mot de passe</FormLabel>
+              <FormControl>
+                <PasswordInput {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="flex justify-end">
           <Link to="/forgot-password" className="text-sm text-primary hover:underline">
