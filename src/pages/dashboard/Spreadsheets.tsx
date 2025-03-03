@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import FileUploader from '@/components/data/FileUploader';
 import DataTable from '@/components/data/DataTable';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -266,6 +266,9 @@ const Spreadsheets = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Générer des documents PDF</DialogTitle>
+            <DialogDescription>
+              Sélectionnez un modèle et mappez les champs pour générer vos documents.
+            </DialogDescription>
           </DialogHeader>
           
           <div className="py-4">
@@ -296,7 +299,7 @@ const Spreadsheets = () => {
                   <div className="grid grid-cols-2 gap-2">
                     {templates.find(t => t.id === 'appel')?.mappingFields.map((field, index) => (
                       <div key={index} className="text-xs bg-white p-2 rounded border border-slate-100 flex items-center">
-                        <span className="bg-primary/10 text-primary text-[10px] px-1 rounded mr-1">{{'{{'}{field}{'}}'}}}</span>
+                        <span className="bg-primary/10 text-primary text-[10px] px-1 rounded mr-1">{`{{${field}}}`}</span>
                         <span className="truncate">{field}</span>
                       </div>
                     ))}
@@ -323,6 +326,9 @@ const Spreadsheets = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Envoyer par email</DialogTitle>
+            <DialogDescription>
+              Sélectionnez un modèle à joindre à vos emails.
+            </DialogDescription>
           </DialogHeader>
           
           <div className="py-4">
