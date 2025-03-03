@@ -7,14 +7,7 @@ import TemplateSelector from './TemplateSelector';
 import TemplateFieldsPreview from './TemplateFieldsPreview';
 import PdfGenerationError from './PdfGenerationError';
 import { usePdfGeneration } from '@/hooks/usePdfGeneration';
-
-interface Template {
-  id: string;
-  name: string;
-  mappingFields?: string[];
-  fileUrl?: string;
-  file?: File;
-}
+import { SpreadsheetTemplate } from '@/hooks/useSpreadsheetTemplates';
 
 interface GeneratePdfDialogProps {
   open: boolean;
@@ -22,7 +15,7 @@ interface GeneratePdfDialogProps {
   selectedRows: any[];
   selectedTemplate: string;
   setSelectedTemplate: (value: string) => void;
-  templates: Template[];
+  templates: SpreadsheetTemplate[];
 }
 
 const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
