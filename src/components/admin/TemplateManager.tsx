@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { FileUp, Eye, Trash2, Check, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { pdfMappingService, DEFAULT_FIELD_MAPPINGS } from '@/services/pdfMappingService';
 
 type Template = {
   id: string;
@@ -86,7 +86,7 @@ const TemplateManager: React.FC = () => {
     }
   };
   
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!selectedFile) {
       toast.error('Fichier manquant', {
         description: 'Veuillez sélectionner un fichier PDF.'
@@ -100,27 +100,49 @@ const TemplateManager: React.FC = () => {
       });
       return;
     }
-    
-    const newTemplate: Template = {
-      id: Date.now().toString(),
-      name: newTemplateName,
-      type: newTemplateType,
-      date: new Date().toISOString().split('T')[0],
-      fields: ['Entreprise', 'Email'], // Default fields, would be extracted from PDF
-      fileUrl: URL.createObjectURL(selectedFile),
-      file: selectedFile,
-      savedBy: user?.name || user?.email || 'Anonymous'
-    };
-    
-    setTemplates([...templates, newTemplate]);
-    setShowUploadDialog(false);
-    setNewTemplateName('');
-    setNewTemplateType('autre');
-    setSelectedFile(null);
-    
-    toast.success('Modèle ajouté avec succès', {
-      description: `Le modèle "${newTemplateName}" a été ajouté à votre bibliothèque.`
-    });
+
+    try {
+      // Auto-map fields if it's an appel de cotisation
+      let mappedFields = DEFAULT_FIELD_MAPPINGS.map(f => f.name);
+      
+      if (selectedFile.name.toLowerCase().includes('appel') && 
+          selectedFile.name.toLowerCase().includes('cotisation')) {
+        const fileBuffer = await selectedFile.arrayBuffer();
+        const csvHeaders = DEFAULT_FIELD_MAPPINGS.map(f => f.name);
+        const mappings = await pdfMappingService.autoMapFields(fileBuffer, csvHeaders);
+        
+        if (mappings.size > 0) {
+          mappedFields = Array.from(mappings.keys());
+          toast.success('Champs automatiquement mappés', {
+            description: `${mappings.size} champs ont été détectés et mappés.`
+          });
+        }
+      }
+
+      const newTemplate: Template = {
+        id: Date.now().toString(),
+        name: newTemplateName,
+        type: newTemplateType,
+        date: new Date().toISOString().split('T')[0],
+        fields: mappedFields,
+        fileUrl: URL.createObjectURL(selectedFile),
+        file: selectedFile,
+        savedBy: user?.name || user?.email || 'Anonymous'
+      };
+      
+      setTemplates([...templates, newTemplate]);
+      setShowUploadDialog(false);
+      setNewTemplateName('');
+      setNewTemplateType('autre');
+      setSelectedFile(null);
+      
+      toast.success('Modèle ajouté avec succès', {
+        description: `Le modèle "${newTemplateName}" a été ajouté à votre bibliothèque.`
+      });
+    } catch (error) {
+      console.error('Error processing template:', error);
+      toast.error('Erreur lors du traitement du modèle');
+    }
   };
   
   const handleDeleteTemplate = () => {
