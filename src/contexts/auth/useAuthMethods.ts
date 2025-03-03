@@ -2,7 +2,7 @@
 import { firebaseAuth } from '@/services/firebase/firebaseService';
 import { firestoreService } from '@/services/firebase/firestoreService';
 import { getDeviceId, getLocation } from './authUtils';
-import { User } from './types';
+import { User, UserRole } from './types';
 
 export const useAuthMethods = (
   setUser: React.Dispatch<React.SetStateAction<User | null>>,
@@ -45,19 +45,18 @@ export const useAuthMethods = (
       const fbUser = await firebaseAuth.register(email, password);
       
       // Créer un profil utilisateur dans Firestore
+      const userRole: UserRole = 'user';
       const userProfile = {
         email,
         name,
-        role: 'user',
+        role: userRole,
         devices: [getDeviceId()],
         lastLogin: new Date().toISOString(),
-        lastLocation: await getLocation()
+        lastLocation: await getLocation(),
+        id: fbUser.uid
       };
       
-      await firestoreService.users.create({
-        ...userProfile,
-        id: fbUser.uid
-      });
+      await firestoreService.users.create(userProfile);
       
       toast({
         title: "Inscription réussie",
