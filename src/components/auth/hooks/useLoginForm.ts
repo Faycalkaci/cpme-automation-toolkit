@@ -35,6 +35,15 @@ export const useLoginForm = () => {
   const onSubmit = async (data: LoginFormValues) => {
     setLoginError(null);
     
+    // Validation supplémentaire des entrées
+    if (!data.email || !data.password) {
+      setLoginError("Veuillez remplir tous les champs");
+      return;
+    }
+    
+    // Sanitization simple des entrées
+    const sanitizedEmail = data.email.trim().toLowerCase();
+    
     // Vérifier si l'utilisateur est bloqué
     if (isBlocked) {
       return;
@@ -55,7 +64,7 @@ export const useLoginForm = () => {
       }
       
       // Login avec Firebase Auth
-      const loginResult = await login(data.email, data.password);
+      const loginResult = await login(sanitizedEmail, data.password);
       
       // Si la connexion est réussie, réinitialiser la limitation
       if (loginResult) {
@@ -63,13 +72,21 @@ export const useLoginForm = () => {
         
         // Mise à jour du profil utilisateur - ne pas bloquer en cas d'erreur
         try {
-          const userProfile = await firestoreService.users.getByEmail(data.email);
+          const userProfile = await firestoreService.users.getByEmail(sanitizedEmail);
           
           if (userProfile) {
+            // Vérification de cohérence des identifiants
+            if (userProfile.uid && userProfile.uid !== loginResult.uid) {
+              console.error("Incohérence d'identifiants détectée");
+              throw new Error("Erreur de sécurité: identifiants incohérents");
+            }
+            
             // Mettre à jour les informations de dernière connexion
             await firestoreService.users.update(userProfile.id!, {
               lastLogin: Timestamp.now(),
-              lastLocation: userProfile.lastLocation || ''
+              lastLocation: userProfile.lastLocation || '',
+              authProvider: 'email',
+              uid: loginResult.uid // S'assurer que l'UID est toujours à jour
             });
           }
         } catch (profileError) {
@@ -80,7 +97,17 @@ export const useLoginForm = () => {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      setLoginError(error.message || "Erreur lors de la connexion. Vérifiez vos identifiants.");
+      
+      // Messages d'erreur plus sécurisés (ne pas révéler si l'email existe)
+      let errorMessage = "Identifiants incorrects ou compte inexistant.";
+      
+      if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Trop de tentatives. Veuillez réessayer plus tard.";
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = "Problème de connexion réseau. Vérifiez votre connexion internet.";
+      }
+      
+      setLoginError(errorMessage);
     }
   };
 

@@ -1,4 +1,3 @@
-
 import { 
   collection, 
   doc, 
@@ -25,6 +24,8 @@ export interface UserProfile {
   devices?: string[];
   lastLogin?: Timestamp | string;
   lastLocation?: string;
+  authProvider?: 'google' | 'email' | 'apple' | string;
+  uid?: string; // Identifiant unique Firebase Auth
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }

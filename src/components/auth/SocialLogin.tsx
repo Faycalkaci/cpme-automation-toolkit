@@ -22,51 +22,66 @@ export const SocialLogin: React.FC = () => {
     try {
       console.log("Tentative de connexion Google...");
       const user = await firebaseAuth.loginWithGoogle();
-      console.log("Connexion réussie, redirection...");
       
-      if (user && user.email) {
-        // Essayer de récupérer le profil utilisateur, mais ne pas bloquer si ça échoue
-        try {
-          let userProfile = await firestoreService.users.getByEmail(user.email);
-          
-          // Créer un profil s'il n'existe pas
-          if (!userProfile && user.email) {
-            try {
-              const newUser = {
-                email: user.email,
-                name: user.displayName || user.email.split('@')[0],
-                role: 'user' as const,
-                devices: [],
-                lastLogin: Timestamp.now(),
-                lastLocation: ''
-              };
-              
-              const userId = await firestoreService.users.create(newUser);
-              console.log("Nouveau profil utilisateur créé:", userId);
-            } catch (profileError) {
-              console.warn("Impossible de créer le profil utilisateur, mais la connexion continue:", profileError);
-            }
-          } else if (userProfile) {
-            // Mettre à jour le profil existant
-            try {
-              await firestoreService.users.update(userProfile.id!, {
-                lastLogin: Timestamp.now(),
-                lastLocation: userProfile.lastLocation || ''
-              });
-              console.log("Profil utilisateur mis à jour");
-            } catch (updateError) {
-              console.warn("Impossible de mettre à jour le profil utilisateur, mais la connexion continue:", updateError);
-            }
-          }
-        } catch (profileError) {
-          console.warn("Erreur lors de l'accès au profil utilisateur, mais la connexion continue:", profileError);
-        }
+      if (!user || !user.email) {
+        throw new Error("Informations utilisateur incomplètes");
       }
       
-      // Même en cas d'erreur Firestore, on valide la connexion puisque l'authentification est réussie
+      console.log("Connexion réussie, redirection...");
+      
+      // Essayer de récupérer le profil utilisateur, mais ne pas bloquer si ça échoue
+      try {
+        let userProfile = await firestoreService.users.getByEmail(user.email);
+        
+        // Créer un profil s'il n'existe pas
+        if (!userProfile) {
+          try {
+            const newUser = {
+              email: user.email,
+              name: user.displayName || user.email.split('@')[0],
+              role: 'user' as const,
+              devices: [],
+              lastLogin: Timestamp.now(),
+              lastLocation: '',
+              // Stockage du fournisseur d'authentification pour sécurité
+              authProvider: 'google',
+              // Stockage de l'ID unique de l'utilisateur
+              uid: user.uid
+            };
+            
+            const userId = await firestoreService.users.create(newUser);
+            console.log("Nouveau profil utilisateur créé:", userId);
+          } catch (profileError) {
+            console.warn("Impossible de créer le profil utilisateur, mais la connexion continue:", profileError);
+          }
+        } else if (userProfile) {
+          // Vérification supplémentaire de sécurité - comparaison de l'UID
+          if (userProfile.uid && userProfile.uid !== user.uid) {
+            console.error("Incohérence d'identifiants détectée");
+            throw new Error("Erreur de sécurité: identifiants incohérents");
+          }
+          
+          // Mettre à jour le profil existant
+          try {
+            await firestoreService.users.update(userProfile.id!, {
+              lastLogin: Timestamp.now(),
+              lastLocation: userProfile.lastLocation || '',
+              // Mise à jour du fournisseur au cas où il aurait changé
+              authProvider: 'google'
+            });
+            console.log("Profil utilisateur mis à jour");
+          } catch (updateError) {
+            console.warn("Impossible de mettre à jour le profil utilisateur, mais la connexion continue:", updateError);
+          }
+        }
+      } catch (profileError) {
+        console.warn("Erreur lors de l'accès au profil utilisateur, mais la connexion continue:", profileError);
+      }
+      
+      // Valider la connexion et rediriger l'utilisateur
       toast({
         title: "Connexion Google réussie",
-        description: "Vous êtes maintenant connecté",
+        description: "Vous êtes maintenant connecté"
       });
       
       navigate('/dashboard');
