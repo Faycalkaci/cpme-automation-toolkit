@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TemplateSelector from './TemplateSelector';
 import TemplateFieldsPreview from './TemplateFieldsPreview';
 import PdfGenerationError from './PdfGenerationError';
+import PdfPreview from './PdfPreview';
 import { usePdfGeneration } from '@/hooks/usePdfGeneration';
 import { SpreadsheetTemplate } from '@/hooks/useSpreadsheetTemplates';
 
@@ -26,6 +28,11 @@ const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
   setSelectedTemplate,
   templates
 }) => {
+  const [activeTab, setActiveTab] = useState('config');
+  const [previewData, setPreviewData] = useState<Record<string, string> | undefined>(
+    selectedRows.length > 0 ? selectedRows[0] : undefined
+  );
+  
   const { 
     isGenerating, 
     generationError, 
@@ -37,40 +44,106 @@ const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
     () => onOpenChange(false)
   );
   
+  // Update preview data when selected rows change
+  React.useEffect(() => {
+    if (selectedRows.length > 0) {
+      setPreviewData(selectedRows[0]);
+    }
+  }, [selectedRows]);
+  
   const confirmGeneration = () => {
     generatePdfs(selectedRows);
+  };
+  
+  const handlePreviewRow = (index: number) => {
+    if (selectedRows.length > index) {
+      setPreviewData(selectedRows[index]);
+      setActiveTab('preview');
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Générer des documents PDF</DialogTitle>
           <DialogDescription>
-            Sélectionnez un modèle et mappez les champs pour générer vos documents.
+            Sélectionnez un modèle, prévisualisez et générez vos documents.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="py-4">
-          <p className="mb-4">
-            Vous êtes sur le point de générer {selectedRows.length} {selectedRows.length > 1 ? 'documents' : 'document'}.
-          </p>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+          <TabsList className="grid grid-cols-2">
+            <TabsTrigger value="config">Configuration</TabsTrigger>
+            <TabsTrigger value="preview">Aperçu</TabsTrigger>
+          </TabsList>
           
-          <div className="space-y-4">
-            <TemplateSelector 
-              templates={templates}
-              selectedTemplate={selectedTemplate}
-              setSelectedTemplate={setSelectedTemplate}
-            />
+          <TabsContent value="config" className="py-4">
+            <p className="mb-4">
+              Vous êtes sur le point de générer {selectedRows.length} {selectedRows.length > 1 ? 'documents' : 'document'}.
+            </p>
             
-            <TemplateFieldsPreview 
-              templateId={selectedTemplate}
-              templates={templates}
-            />
-            
-            <PdfGenerationError error={generationError} />
-          </div>
-        </div>
+            <div className="space-y-4">
+              <TemplateSelector 
+                templates={templates}
+                selectedTemplate={selectedTemplate}
+                setSelectedTemplate={setSelectedTemplate}
+              />
+              
+              <TemplateFieldsPreview 
+                templateId={selectedTemplate}
+                templates={templates}
+              />
+              
+              {selectedRows.length > 1 && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-md">
+                  <h4 className="text-sm font-medium text-blue-700">Options d'aperçu</h4>
+                  <p className="text-xs text-blue-600 mt-1 mb-2">
+                    Prévisualisez le document pour un destinataire spécifique :
+                  </p>
+                  <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                    {selectedRows.slice(0, 5).map((row, index) => {
+                      const company = row.SOCIETE || row.societe || row.Société || row.société || `Entreprise ${index + 1}`;
+                      return (
+                        <Button 
+                          key={index} 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handlePreviewRow(index)}
+                        >
+                          {company}
+                        </Button>
+                      );
+                    })}
+                    {selectedRows.length > 5 && (
+                      <span className="text-xs text-slate-500 flex items-center">
+                        +{selectedRows.length - 5} autres
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              <PdfGenerationError error={generationError} />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="preview" className="py-4">
+            <div className="space-y-4">
+              <div className="bg-amber-50 border border-amber-100 rounded-md p-3 mb-4">
+                <p className="text-sm text-amber-700">
+                  Aperçu pour: <strong>{previewData?.SOCIETE || previewData?.societe || "Document"}</strong>
+                </p>
+              </div>
+              
+              <PdfPreview 
+                selectedTemplate={selectedTemplate}
+                templates={templates}
+                previewData={previewData}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
         
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating}>

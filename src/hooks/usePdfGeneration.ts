@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import { documentStorage } from '@/services/documentStorage';
-import { pdfMappingService } from '@/services/pdfMappingService';
+import { pdfService } from '@/services/pdf/pdfService';
 import { templateStorage } from '@/services/templateStorage';
 import { SpreadsheetTemplate } from '@/hooks/useSpreadsheetTemplates';
 
@@ -50,7 +50,7 @@ export const usePdfGeneration = (
         } else {
           // Create a default PDF if no template is available
           console.log("No template file available, creating default PDF");
-          const defaultPdfBuffer = await pdfMappingService.createDefaultPdf();
+          const defaultPdfBuffer = await pdfService.createDefaultPdf();
           setTemplateBytes(defaultPdfBuffer);
         }
       } catch (error) {
@@ -59,7 +59,7 @@ export const usePdfGeneration = (
         
         // Create a default PDF as fallback
         try {
-          const defaultPdfBuffer = await pdfMappingService.createDefaultPdf();
+          const defaultPdfBuffer = await pdfService.createDefaultPdf();
           setTemplateBytes(defaultPdfBuffer);
         } catch (fallbackError) {
           console.error("Error creating default PDF:", fallbackError);
@@ -103,14 +103,14 @@ export const usePdfGeneration = (
     
     try {
       // Get mapping configuration for the template
-      const mappings = await pdfMappingService.getTemplateMapping(selectedTemplate);
+      const mappings = await pdfService.getTemplateMapping(selectedTemplate);
       
       // Generate PDFs for each selected row
       for (let i = 0; i < selectedRows.length; i++) {
         const row = selectedRows[i];
         
         // Generate the filled PDF
-        const pdfBytes = await pdfMappingService.generateFilledPDF(
+        const pdfBytes = await pdfService.generateFilledPDF(
           templateBytes,
           row,
           mappings

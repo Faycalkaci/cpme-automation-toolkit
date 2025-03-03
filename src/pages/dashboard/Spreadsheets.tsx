@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { FileSpreadsheet } from 'lucide-react';
+import { FileSpreadsheet, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
   Card, 
@@ -10,6 +10,7 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import FileUploader from '@/components/data/FileUploader';
 import DataTable from '@/components/data/DataTable';
 import { useSpreadsheetTemplates } from '@/hooks/useSpreadsheetTemplates';
@@ -18,6 +19,7 @@ import GeneratePdfDialog from '@/components/spreadsheets/GeneratePdfDialog';
 import EmailDialog from '@/components/spreadsheets/EmailDialog';
 import ImportInstructions from '@/components/spreadsheets/ImportInstructions';
 import DataActions from '@/components/spreadsheets/DataActions';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 const Spreadsheets = () => {
   const [activeTab, setActiveTab] = useState('upload');
@@ -91,12 +93,82 @@ const Spreadsheets = () => {
     }
   };
   
+  // Define keyboard shortcuts
+  const shortcuts = [
+    {
+      key: 'u',
+      altKey: true,
+      action: () => setActiveTab('upload'),
+      description: 'Aller à l\'onglet d\'importation'
+    },
+    {
+      key: 'd',
+      altKey: true,
+      action: () => data.length > 0 && setActiveTab('data'),
+      description: 'Aller à l\'onglet des données'
+    },
+    {
+      key: 'p',
+      altKey: true,
+      action: () => {
+        const selectedData = document.querySelectorAll('input[type="checkbox"]:checked');
+        if (selectedData.length > 0 && activeTab === 'data') {
+          handleGeneratePdf(selectedRows);
+        } else {
+          toast.info('Sélectionnez des lignes avant de générer des PDF');
+        }
+      },
+      description: 'Générer des PDF pour les lignes sélectionnées'
+    },
+    {
+      key: 'e',
+      altKey: true,
+      action: () => {
+        const selectedData = document.querySelectorAll('input[type="checkbox"]:checked');
+        if (selectedData.length > 0 && activeTab === 'data') {
+          handleSendEmail(selectedRows);
+        } else {
+          toast.info('Sélectionnez des lignes avant d\'envoyer des emails');
+        }
+      },
+      description: 'Envoyer des emails pour les lignes sélectionnées'
+    },
+    {
+      key: 'x',
+      altKey: true,
+      action: () => {
+        if (data.length > 0 && activeTab === 'data') {
+          handleExport();
+        }
+      },
+      description: 'Exporter les données'
+    },
+    {
+      key: '?',
+      action: () => showAvailableShortcuts(),
+      description: 'Afficher cette aide'
+    }
+  ];
+  
+  const { showAvailableShortcuts } = useKeyboardShortcuts(shortcuts);
+  
   return (
     <div className="w-full max-w-full">
-      <h1 className="text-3xl font-bold mb-8 flex items-center">
-        <FileSpreadsheet className="h-8 w-8 mr-3 text-cpme" />
-        Gestion des données
-      </h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold flex items-center">
+          <FileSpreadsheet className="h-8 w-8 mr-3 text-cpme" />
+          Gestion des données
+        </h1>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={showAvailableShortcuts}
+          aria-label="Afficher les raccourcis clavier"
+        >
+          <HelpCircle className="h-5 w-5 mr-1" />
+          <span className="text-sm">Raccourcis</span>
+        </Button>
+      </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-8">

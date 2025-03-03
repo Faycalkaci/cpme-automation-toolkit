@@ -2,6 +2,8 @@
 import { toast } from 'sonner';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
+import { securityUtils } from './securityUtils';
+import { errorHandler, ErrorType } from '@/services/errorHandler';
 
 /**
  * Process CSV file and extract data
@@ -15,21 +17,62 @@ export const processCSVFile = (
   Papa.parse(file, {
     header: true,
     complete: (results) => {
-      const headers = results.meta.fields || [];
-      
-      // Check for required field headers
-      checkMissingHeaders(headers, requiredHeaders);
-      
-      onSuccess(results.data, headers);
-      
-      toast.success("Fichier traité avec succès", {
-        description: `${results.data.length} lignes importées.`
-      });
+      try {
+        const headers = results.meta.fields || [];
+        
+        // Check for required field headers
+        checkMissingHeaders(headers, requiredHeaders);
+        
+        // Sanitize data to prevent security issues
+        const sanitizedData = results.data.map(row => {
+          const sanitizedRow: Record<string, string> = {};
+          Object.entries(row).forEach(([key, value]) => {
+            // Skip empty or non-string values
+            if (value === null || value === undefined) {
+              sanitizedRow[key] = '';
+              return;
+            }
+            
+            const stringValue = String(value);
+            
+            // Sanitize each cell based on data type
+            if (key.toLowerCase().includes('email') || key.toLowerCase().includes('mail')) {
+              // For email fields, just trim
+              sanitizedRow[key] = stringValue.trim();
+            } else {
+              // For other fields, sanitize input and validate CSV data
+              sanitizedRow[key] = securityUtils.validateCellData(
+                securityUtils.sanitizeInput(stringValue)
+              );
+            }
+          });
+          return sanitizedRow;
+        });
+        
+        onSuccess(sanitizedData, headers);
+        
+        toast.success("Fichier traité avec succès", {
+          description: `${sanitizedData.length} lignes importées.`
+        });
+      } catch (error) {
+        errorHandler.handleError(error, {
+          type: ErrorType.DATA_PROCESSING_ERROR,
+          message: "Erreur lors du traitement des données CSV"
+        });
+        
+        const errorMsg = error instanceof Error ? error.message : "Erreur inconnue";
+        onError?.(errorMsg);
+      }
     },
     error: (error) => {
       console.error("CSV parse error:", error);
       const errorMsg = "Impossible de traiter ce fichier CSV. Vérifiez son format.";
-      toast.error("Erreur de traitement", { description: errorMsg });
+      
+      errorHandler.handleError(error, {
+        type: ErrorType.FILE_ERROR,
+        message: errorMsg
+      });
+      
       onError?.(errorMsg);
     }
   });
@@ -69,11 +112,30 @@ export const processExcelFile = (
       // Check for required field headers
       checkMissingHeaders(headers, requiredHeaders);
       
-      // Convert rows to objects with headers as keys
+      // Convert rows to objects with headers as keys and sanitize data
       const formattedData = rows.map(row => {
         const obj: Record<string, any> = {};
         headers.forEach((header, index) => {
-          obj[header] = row[index];
+          const value = row[index];
+          
+          // Skip undefined values
+          if (value === undefined) {
+            obj[header] = '';
+            return;
+          }
+          
+          const stringValue = String(value);
+          
+          // Sanitize each cell based on data type
+          if (header.toLowerCase().includes('email') || header.toLowerCase().includes('mail')) {
+            // For email fields, just trim
+            obj[header] = stringValue.trim();
+          } else {
+            // For other fields, sanitize input and validate CSV data
+            obj[header] = securityUtils.validateCellData(
+              securityUtils.sanitizeInput(stringValue)
+            );
+          }
         });
         return obj;
       });
@@ -84,16 +146,23 @@ export const processExcelFile = (
         description: `${formattedData.length} lignes importées.`
       });
     } catch (error) {
-      console.error("Error processing Excel file:", error);
-      const errorMsg = "Impossible de traiter ce fichier Excel. Vérifiez son format.";
-      toast.error("Erreur de traitement", { description: errorMsg });
+      errorHandler.handleError(error, {
+        type: ErrorType.DATA_PROCESSING_ERROR,
+        message: "Erreur lors du traitement des données Excel"
+      });
+      
+      const errorMsg = error instanceof Error ? error.message : "Erreur inconnue";
       onError?.(errorMsg);
     }
   };
   
-  reader.onerror = () => {
+  reader.onerror = (error) => {
+    errorHandler.handleError(error, {
+      type: ErrorType.FILE_ERROR,
+      message: "Impossible de lire ce fichier"
+    });
+    
     const errorMsg = "Impossible de lire ce fichier. Veuillez réessayer.";
-    toast.error("Erreur de lecture", { description: errorMsg });
     onError?.(errorMsg);
   };
   
@@ -127,6 +196,11 @@ export const validateFile = (
   maxFileSize: number,
   onError?: (error: string) => void
 ): boolean => {
+  // Validate filename for security
+  if (!securityUtils.validateFilename(file.name)) {
+    return false;
+  }
+  
   // Check file size
   if (file.size > maxFileSize) {
     const maxSizeMB = Math.round(maxFileSize / (1024 * 1024));
