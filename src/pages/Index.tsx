@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -14,8 +13,6 @@ import {
   Star, 
   MessageCircle 
 } from 'lucide-react';
-import { CustomerExperience } from '@/components/onboarding/CustomerExperience';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -124,9 +121,6 @@ const Index = () => {
               <a href="#about" className="text-sm font-medium text-slate-700 hover:text-cpme transition-colors">
                 À propos
               </a>
-              <a href="#tools" className="text-sm font-medium text-slate-700 hover:text-cpme transition-colors">
-                Outils PDF Publics
-              </a>
             </nav>
 
             <div className="flex items-center space-x-2">
@@ -189,27 +183,6 @@ const Index = () => {
                 Se connecter
               </Button>
             </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Customer Experience Section */}
-      <section id="about" className="py-16 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-slate-900">Découvrez CPME Tool en action</h2>
-            <p className="mt-4 text-lg text-slate-600">
-              Notre solution a déjà conquis des centaines de CPME à travers la France. Découvrez pourquoi.
-            </p>
-          </div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            viewport={{ once: true }}
-          >
-            <CustomerExperience />
           </motion.div>
         </div>
       </section>
