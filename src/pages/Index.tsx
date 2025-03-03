@@ -99,7 +99,7 @@ const Index = () => {
               <div className="w-8 h-8 rounded-full bg-cpme flex items-center justify-center">
                 <span className="text-white font-bold">CT</span>
               </div>
-              <span className="font-bold text-lg tracking-tight">CPME Tool</span>
+              <span className="font-bold text-lg tracking-tight text-[#0359f8]">CPME Tool</span>
             </Link>
             
             <nav className="hidden md:flex items-center space-x-8">
