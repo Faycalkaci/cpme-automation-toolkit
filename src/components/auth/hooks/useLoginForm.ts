@@ -1,23 +1,28 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { loginFormSchema, LoginFormValues } from '@/pages/auth/loginSchema';
 import { useAuth } from '@/contexts/AuthContext';
-import { rateLimitService } from '@/services/rateLimitService';
 import { firestoreService } from '@/services/firebase/firestoreService';
 import { Timestamp } from 'firebase/firestore';
+import { useRateLimit } from './useRateLimit';
 
 export const useLoginForm = () => {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [isBlocked, setIsBlocked] = useState(false);
-  const [attemptsLeft, setAttemptsLeft] = useState(5);
-  const [timeRemaining, setTimeRemaining] = useState(0);
   const [captchaVerified, setCaptchaVerified] = useState(false);
-  const [showCaptcha, setShowCaptcha] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  
+  const {
+    isBlocked,
+    attemptsLeft,
+    timeRemaining,
+    showCaptcha,
+    recordAttempt,
+    resetOnSuccess
+  } = useRateLimit();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -26,34 +31,6 @@ export const useLoginForm = () => {
       password: '',
     },
   });
-
-  // Vérifier le statut de blocage et captcha au chargement
-  useEffect(() => {
-    const checkRateLimit = () => {
-      const blocked = rateLimitService.isBlocked();
-      setIsBlocked(blocked);
-      
-      if (blocked) {
-        setTimeRemaining(rateLimitService.getTimeRemaining());
-      }
-    };
-    
-    checkRateLimit();
-    
-    // Vérifier si le captcha doit être affiché
-    setShowCaptcha(rateLimitService.shouldShowCaptcha());
-    
-    // Mettre à jour le compteur toutes les secondes
-    const timer = setInterval(() => {
-      if (rateLimitService.isBlocked()) {
-        setTimeRemaining(rateLimitService.getTimeRemaining());
-      } else if (isBlocked) {
-        setIsBlocked(false);
-      }
-    }, 1000);
-    
-    return () => clearInterval(timer);
-  }, [isBlocked]);
 
   const onSubmit = async (data: LoginFormValues) => {
     setLoginError(null);
@@ -71,24 +48,18 @@ export const useLoginForm = () => {
     
     try {
       // Enregistrer une tentative
-      const rateLimit = rateLimitService.recordAttempt();
-      setAttemptsLeft(rateLimit.attemptsLeft);
+      const isUserBlocked = recordAttempt();
       
-      if (rateLimit.blocked) {
-        setIsBlocked(true);
-        setTimeRemaining(rateLimitService.getTimeRemaining());
+      if (isUserBlocked) {
         return;
       }
-      
-      // Vérifier si le captcha doit être affiché après cette tentative
-      setShowCaptcha(rateLimitService.shouldShowCaptcha());
       
       // Login avec Firebase Auth
       const loginResult = await login(data.email, data.password);
       
       // Si la connexion est réussie, réinitialiser la limitation
       if (loginResult) {
-        rateLimitService.resetOnSuccess();
+        resetOnSuccess();
         
         // Mise à jour du profil utilisateur
         const userProfile = await firestoreService.users.getByEmail(data.email);
@@ -106,9 +77,6 @@ export const useLoginForm = () => {
     } catch (error: any) {
       console.error('Login error:', error);
       setLoginError(error.message || "Erreur lors de la connexion. Vérifiez vos identifiants.");
-      
-      // Le captcha est géré automatiquement par le service de limitation de requêtes
-      setShowCaptcha(rateLimitService.shouldShowCaptcha());
     }
   };
 
