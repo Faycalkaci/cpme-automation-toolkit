@@ -7,7 +7,7 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
-import { FileSpreadsheet, ChevronDown, FileText, Mail } from 'lucide-react';
+import { FileSpreadsheet, ChevronDown, FileText, Mail, Download } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import FileUploader from '@/components/data/FileUploader';
@@ -25,8 +25,23 @@ const Spreadsheets = () => {
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   
+  // Define templates with their mapping fields
   const templates = [
-    { id: 'appel', name: 'Appel de cotisation' },
+    { 
+      id: 'appel', 
+      name: 'Appel de cotisation',
+      mappingFields: [
+        'DATE ECHEANCE',
+        'Cotisation',
+        'N° adh',
+        'SOCIETE',
+        'Dirigeant',
+        'E MAIL 1',
+        'E Mail 2',
+        'Adresse',
+        'ville'
+      ]
+    },
     { id: 'facture', name: 'Facture standard' },
     { id: 'rappel', name: 'Rappel de cotisation' }
   ];
@@ -51,12 +66,50 @@ const Spreadsheets = () => {
     setShowEmailDialog(true);
   };
   
+  const handleExport = () => {
+    // Implement export functionality
+    toast.success('Export en cours', {
+      description: `${data.length} lignes sont en cours d'exportation.`
+    });
+    
+    // Create CSV content
+    const csvContent = [
+      headers.join(','), // Header row
+      ...data.map(row => headers.map(header => row[header]).join(',')) // Data rows
+    ].join('\n');
+    
+    // Create a blob and download it
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'export_data.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success('Export terminé', {
+      description: `Les données ont été exportées avec succès.`
+    });
+  };
+  
   const confirmGeneration = () => {
     if (!selectedTemplate) {
       toast.error('Sélection requise', {
         description: 'Veuillez sélectionner un modèle de document.'
       });
       return;
+    }
+    
+    // Get the selected template object
+    const templateObj = templates.find(t => t.id === selectedTemplate);
+    
+    // Display mapping information if available
+    if (templateObj && templateObj.mappingFields && templateObj.mappingFields.length > 0) {
+      toast.info('Champs mappés', {
+        description: `Les champs suivants seront utilisés: ${templateObj.mappingFields.join(', ')}`
+      });
     }
     
     // Simulate PDF generation
@@ -74,6 +127,22 @@ const Spreadsheets = () => {
   };
   
   const confirmSendEmail = () => {
+    // Get the selected template object
+    const templateObj = templates.find(t => t.id === selectedTemplate);
+    
+    // Check for email fields in the mapping
+    if (templateObj && templateObj.id === 'appel') {
+      const emailFields = templateObj.mappingFields.filter(field => 
+        field.toLowerCase().includes('mail')
+      );
+      
+      if (emailFields.length > 0) {
+        toast.info('Emails détectés', {
+          description: `Les emails seront envoyés aux champs: ${emailFields.join(', ')}`
+        });
+      }
+    }
+    
     // Simulate email sending
     toast.success('Envoi en cours', {
       description: `${selectedRows.length} emails sont en cours d'envoi.`
@@ -165,6 +234,22 @@ const Spreadsheets = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {data.length > 0 && (
+                <div className="mb-4 flex space-x-2">
+                  <Button onClick={() => handleGeneratePdf(data)}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Générer des PDF
+                  </Button>
+                  <Button onClick={() => handleSendEmail(data)}>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Envoyer par email
+                  </Button>
+                  <Button variant="outline" onClick={handleExport}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Exporter
+                  </Button>
+                </div>
+              )}
               <DataTable 
                 data={data} 
                 headers={headers} 
@@ -204,6 +289,20 @@ const Spreadsheets = () => {
                   </SelectContent>
                 </Select>
               </div>
+              
+              {selectedTemplate === 'appel' && (
+                <div className="mt-4 p-3 bg-slate-50 rounded-md border border-slate-200">
+                  <h4 className="text-sm font-medium mb-2">Champs à mapper pour "Appel de cotisation"</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {templates.find(t => t.id === 'appel')?.mappingFields.map((field, index) => (
+                      <div key={index} className="text-xs bg-white p-2 rounded border border-slate-100 flex items-center">
+                        <span className="bg-primary/10 text-primary text-[10px] px-1 rounded mr-1">{{'{{'}{field}{'}}'}}}</span>
+                        <span className="truncate">{field}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           
@@ -247,6 +346,24 @@ const Spreadsheets = () => {
                   </SelectContent>
                 </Select>
               </div>
+              
+              {selectedTemplate === 'appel' && (
+                <div className="mt-2">
+                  <p className="text-sm text-slate-600 mb-2">
+                    Les emails seront envoyés en utilisant les champs suivants:
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {templates.find(t => t.id === 'appel')?.mappingFields
+                      .filter(field => field.toLowerCase().includes('mail'))
+                      .map((field, index) => (
+                        <span key={index} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                          {field}
+                        </span>
+                      ))
+                    }
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           
