@@ -42,7 +42,7 @@ const DataTableContent: React.FC = () => {
       <DataTableControls />
       
       <div className="rounded-md border">
-        <div className="relative overflow-x-auto">
+        <div className="overflow-x-auto">
           <Table>
             <DataTableHeader />
             <DataTableBody />
