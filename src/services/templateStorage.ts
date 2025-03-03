@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 
 // Template interface - aligned with components/admin/templates/types.ts
@@ -118,6 +117,31 @@ export const templateStorage = {
       console.error('Error retrieving templates:', error);
       toast.error('Erreur lors de la récupération des modèles');
       return [];
+    }
+  },
+  
+  /**
+   * Get a specific template by ID
+   */
+  getTemplateById: async (templateId: string, adminTemplate: boolean = false): Promise<Template | null> => {
+    try {
+      const templates = await templateStorage.getTemplates(adminTemplate);
+      const template = templates.find(t => t.id === templateId);
+      
+      if (!template) {
+        // If not found in the requested storage, try the other storage
+        if (!adminTemplate) {
+          const adminTemplates = await templateStorage.getTemplates(true);
+          return adminTemplates.find(t => t.id === templateId) || null;
+        }
+        return null;
+      }
+      
+      return template;
+    } catch (error) {
+      console.error('Error retrieving template by ID:', error);
+      toast.error('Erreur lors de la récupération du modèle');
+      return null;
     }
   },
   
