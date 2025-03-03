@@ -4,55 +4,22 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { firebaseAuth } from '@/services/firebase/firebaseService';
-import { firestoreService } from '@/services/firebase/firestoreService';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
-import { useFirebase } from '@/contexts/FirebaseContext';
 
 export const SocialLogin: React.FC = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [domainError, setDomainError] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { refreshProfile } = useFirebase();
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     setDomainError(false);
     try {
       console.log("Tentative de connexion Google...");
-      const user = await firebaseAuth.loginWithGoogle();
-      
-      // Check if user profile exists in Firestore
-      const userProfile = await firestoreService.users.getByEmail(user.email || '');
-      
-      if (!userProfile && user.email) {
-        // Create a new user profile if none exists
-        await firestoreService.users.create({
-          email: user.email,
-          name: user.displayName || user.email.split('@')[0],
-          role: 'user', // Default role
-          devices: [],
-          lastLogin: new Date().toISOString(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
-        
-        toast({
-          title: "Nouveau compte créé",
-          description: "Votre profil a été ajouté à notre base de données.",
-        });
-      } else if (userProfile) {
-        // Update last login timestamp
-        await firestoreService.users.update(userProfile.id!, {
-          lastLogin: new Date().toISOString()
-        });
-      }
-      
-      // Refresh the user profile in context
-      await refreshProfile();
-      
+      await firebaseAuth.loginWithGoogle();
       console.log("Connexion réussie, redirection...");
       navigate('/dashboard');
     } catch (error: any) {
