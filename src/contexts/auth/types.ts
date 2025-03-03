@@ -1,4 +1,6 @@
 
+import { Timestamp } from 'firebase/firestore';
+
 export type UserRole = 'super-admin' | 'admin' | 'user' | null;
 
 export interface User {
