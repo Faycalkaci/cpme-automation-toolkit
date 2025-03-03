@@ -18,6 +18,10 @@ import Templates from "./pages/dashboard/Templates";
 import Emails from "./pages/dashboard/Emails";
 import Settings from "./pages/dashboard/Settings";
 import SuperAdmin from "./pages/dashboard/SuperAdmin";
+import Users from "./pages/dashboard/Users";
+import Billing from "./pages/dashboard/Billing";
+import Licenses from "./pages/dashboard/Licenses";
+import Statistics from "./pages/dashboard/Statistics";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 // Protected route component
@@ -64,6 +68,10 @@ function AppRoutes() {
           <Route path="/documents" element={<Documents />} />
           <Route path="/templates" element={<Templates />} />
           <Route path="/emails" element={<Emails />} />
+          <Route path="/users" element={<Users />} />
+          <Route path="/billing" element={<Billing />} />
+          <Route path="/licenses" element={<Licenses />} />
+          <Route path="/statistics" element={<Statistics />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<SuperAdminRoute><SuperAdmin /></SuperAdminRoute>} />
         </Route>

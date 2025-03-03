@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, isMobile }) => {
   const location = useLocation();
   const { user } = useAuth();
   
-  // Close sidebar on mobile when route changes
   useEffect(() => {
     if (isMobile && isOpen) {
       setIsOpen(false);
@@ -54,7 +52,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, isMobile }) => {
   ];
 
   const renderNavLink = (item: any) => {
-    // If roles is specified, check if the user has the required role
     if (item.roles && !item.roles.includes(user?.role || '')) {
       return null;
     }
@@ -84,7 +81,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, isMobile }) => {
 
   return (
     <>
-      {/* Mobile overlay */}
       {isMobile && isOpen && (
         <div 
           className="fixed inset-0 z-40 bg-black/50 transition-opacity"
@@ -92,7 +88,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, isMobile }) => {
         />
       )}
 
-      {/* Sidebar */}
       <aside 
         className={`
           fixed lg:sticky top-0 lg:top-16 z-50 lg:z-0 
