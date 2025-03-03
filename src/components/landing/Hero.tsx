@@ -25,6 +25,17 @@ const Hero = () => {
           transition={{ duration: 0.5 }} 
           className="text-center"
         >
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.6 }}
+            className="mb-6 flex justify-center"
+          >
+            <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+              Simplifiez votre gestion administrative
+            </span>
+          </motion.div>
+          
           <motion.h1 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
