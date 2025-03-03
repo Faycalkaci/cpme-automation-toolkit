@@ -7,7 +7,7 @@ export interface TemplateField {
   placeholder: string;
 }
 
-export const DEFAULT_FIELD_MAPPINGS = [
+export const DEFAULT_FIELD_MAPPINGS: TemplateField[] = [
   { name: "DATE ECHEANCE", placeholder: "{{DATE ECHEANCE}}" },
   { name: "Cotisation", placeholder: "{{Cotisation}}" },
   { name: "N° adh", placeholder: "{{N° adh}}" },
@@ -25,8 +25,8 @@ export const pdfMappingService = {
     try {
       const pdfDoc = await PDFDocument.load(pdfBytes);
       const pages = pdfDoc.getPages();
-      const text = await pages[0].getTextContent();
       
+      // pdf-lib doesn't have getTextContent directly, so we'll map fields based on CSV headers
       const mappings = new Map<string, string>();
       
       DEFAULT_FIELD_MAPPINGS.forEach(field => {
@@ -39,7 +39,7 @@ export const pdfMappingService = {
     } catch (error) {
       console.error('Error mapping fields:', error);
       toast.error('Erreur lors du mappage automatique des champs');
-      return new Map();
+      return new Map<string, string>();
     }
   },
 
