@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { templateStorage } from '@/services/templateStorage';
 import { Template } from '@/components/admin/templates/types';
-import { DEFAULT_FIELD_MAPPINGS } from '@/services/pdf/pdfService';
+import { DEFAULT_FIELD_MAPPINGS } from '@/services/pdfMappingService';
 
 export interface SpreadsheetTemplate {
   id: string;
