@@ -5,14 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { firebaseAuth } from '@/services/firebase/firebaseService';
 import { useToast } from '@/components/ui/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { InfoIcon } from 'lucide-react';
 
 export const SocialLogin: React.FC = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [domainError, setDomainError] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
+    setDomainError(false);
     try {
       console.log("Tentative de connexion Google...");
       await firebaseAuth.loginWithGoogle();
@@ -20,11 +24,22 @@ export const SocialLogin: React.FC = () => {
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Google login error:', error);
-      toast({
-        title: "Échec de la connexion Google",
-        description: error.message || "Une erreur s'est produite lors de la connexion avec Google.",
-        variant: "destructive"
-      });
+      
+      // Détection spécifique de l'erreur de domaine non autorisé
+      if (error.code === 'auth/unauthorized-domain') {
+        setDomainError(true);
+        toast({
+          title: "Domaine non autorisé",
+          description: "Ce domaine n'est pas autorisé dans les paramètres Firebase. Veuillez contacter l'administrateur.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Échec de la connexion Google",
+          description: error.message || "Une erreur s'est produite lors de la connexion avec Google.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setGoogleLoading(false);
     }
@@ -40,6 +55,17 @@ export const SocialLogin: React.FC = () => {
           <span className="px-2 bg-white text-slate-500">ou</span>
         </div>
       </div>
+
+      {domainError && (
+        <Alert variant="destructive" className="mt-4">
+          <InfoIcon className="h-4 w-4" />
+          <AlertTitle>Domaine non autorisé</AlertTitle>
+          <AlertDescription>
+            Le domaine actuel n'est pas autorisé dans les paramètres de votre projet Firebase. 
+            Ajoutez "{window.location.hostname}" dans la liste des domaines autorisés de votre console Firebase.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="mt-4">
         <Button
