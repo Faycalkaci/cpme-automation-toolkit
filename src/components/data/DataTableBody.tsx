@@ -23,14 +23,19 @@ const DataTableBody: React.FC = () => {
               key={rowIndex} 
               className={selectedRows[rowIndex] ? 'bg-primary/5' : 'hover:bg-slate-50'}
             >
-              <TableCell className="text-center sticky left-0 bg-white">
+              <TableCell className="text-center sticky left-0 bg-white z-10">
                 <Checkbox 
                   checked={selectedRows[rowIndex] || false}
                   onCheckedChange={() => toggleRowSelection(rowIndex)}
                 />
               </TableCell>
               {headers.map((header, cellIndex) => (
-                <TableCell key={cellIndex}>{row[header] || '-'}</TableCell>
+                <TableCell 
+                  key={cellIndex}
+                  className="whitespace-nowrap"
+                >
+                  {row[header] || '-'}
+                </TableCell>
               ))}
             </TableRow>
           ))}
