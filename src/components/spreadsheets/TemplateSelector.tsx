@@ -2,9 +2,10 @@
 import React from 'react';
 import { Template } from '@/components/admin/templates/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SpreadsheetTemplate } from '@/hooks/useSpreadsheetTemplates';
 
 interface TemplateSelectorProps {
-  templates: Template[];
+  templates: SpreadsheetTemplate[];
   selectedTemplate: string;
   setSelectedTemplate: (value: string) => void;
 }

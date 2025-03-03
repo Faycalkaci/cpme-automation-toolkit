@@ -1,10 +1,10 @@
 
 import React from 'react';
-import { Template } from '@/components/admin/templates/types';
+import { SpreadsheetTemplate } from '@/hooks/useSpreadsheetTemplates';
 
 interface TemplateFieldsPreviewProps {
   templateId: string;
-  templates: Template[];
+  templates: SpreadsheetTemplate[];
 }
 
 const TemplateFieldsPreview: React.FC<TemplateFieldsPreviewProps> = ({

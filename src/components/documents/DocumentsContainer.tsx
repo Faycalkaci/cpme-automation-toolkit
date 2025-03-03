@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
@@ -7,7 +6,7 @@ import DocumentSearch from './DocumentSearch';
 import DocumentActions from './DocumentActions';
 import DocumentTable from './DocumentTable';
 import NoDocumentsFound from './NoDocumentsFound';
-import { useDocuments } from './useDocuments';
+import { useDocuments } from './hooks/useDocuments';
 
 const DocumentsContainer: React.FC = () => {
   const {
