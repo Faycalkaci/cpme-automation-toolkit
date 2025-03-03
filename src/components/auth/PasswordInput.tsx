@@ -2,20 +2,17 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { UseFormReturn } from 'react-hook-form';
-import { LoginFormValues } from '@/pages/auth/loginSchema';
 
-interface PasswordInputProps {
+export interface PasswordInputProps {
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   name?: string;
   disabled?: boolean;
-  ref?: React.Ref<HTMLInputElement>;
 }
 
-export const PasswordInput: React.FC<PasswordInputProps> = React.forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ value, onChange, onBlur, name, disabled, ...props }, ref) => {
+export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
+  ({ value, onChange, onBlur, name, disabled = false, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
 
     const togglePasswordVisibility = () => {

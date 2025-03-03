@@ -29,19 +29,17 @@ export const LoginForm: React.FC = () => {
   const onSubmit = async (data: LoginFormValues) => {
     try {
       // Login with Firebase Auth
-      const user = await login(data.email, data.password);
+      await login(data.email, data.password);
       
-      // Update the user profile if login was successful
-      if (user) {
-        const userProfile = await firestoreService.users.getByEmail(data.email);
-        
-        if (userProfile) {
-          // Update user profile with last login info
-          await firestoreService.users.update(userProfile.id!, {
-            lastLogin: Timestamp.now(),
-            lastLocation: userProfile.lastLocation || ''
-          });
-        }
+      // Get the user profile after login
+      const userProfile = await firestoreService.users.getByEmail(data.email);
+      
+      if (userProfile) {
+        // Update user profile with last login info
+        await firestoreService.users.update(userProfile.id!, {
+          lastLogin: Timestamp.now(),
+          lastLocation: userProfile.lastLocation || ''
+        });
       }
       
       navigate('/dashboard');

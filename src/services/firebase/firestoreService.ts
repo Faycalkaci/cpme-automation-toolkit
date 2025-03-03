@@ -23,7 +23,7 @@ export interface UserProfile {
   organizationId?: string;
   organizationName?: string;
   devices?: string[];
-  lastLogin?: string;
+  lastLogin?: Timestamp | string;
   lastLocation?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
