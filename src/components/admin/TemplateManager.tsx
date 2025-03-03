@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { documentProcessingService } from '@/services/documentProcessingService';
+import { pdfMappingService, DEFAULT_FIELD_MAPPINGS } from '@/services/pdfMappingService';
 import { Template } from './templates/types';
 import TemplateHeader from './templates/TemplateHeader';
 import TemplateList from './templates/TemplateList';
@@ -17,7 +18,6 @@ const TemplateManager: React.FC = () => {
       id: '1',
       name: 'Appel de cotisation',
       type: 'appel',
-      documentType: 'pdf',
       date: '2023-06-15',
       fields: ['Entreprise', 'Adresse', 'Code Postal', 'Ville', 'Email', 'Montant'],
       fileUrl: '/templates/appel-cotisation.pdf',
@@ -39,7 +39,6 @@ const TemplateManager: React.FC = () => {
       id: '2',
       name: 'Facture standard',
       type: 'facture',
-      documentType: 'pdf',
       date: '2023-08-20',
       fields: ['Entreprise', 'Adresse', 'Code Postal', 'Ville', 'Email', 'Référence', 'Date', 'Montant HT', 'TVA', 'Total TTC'],
       fileUrl: '/templates/facture.pdf',
@@ -50,7 +49,6 @@ const TemplateManager: React.FC = () => {
       id: '3',
       name: 'Rappel de cotisation',
       type: 'rappel',
-      documentType: 'pdf',
       date: '2023-09-05',
       fields: ['Entreprise', 'Adresse', 'Code Postal', 'Ville', 'Email', 'Montant', 'Date échéance'],
       fileUrl: '/templates/rappel-cotisation.pdf',
@@ -71,13 +69,16 @@ const TemplateManager: React.FC = () => {
   const [newTemplateType, setNewTemplateType] = useState<'facture' | 'appel' | 'rappel' | 'autre'>('autre');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
+  // Load templates from localStorage on mount
   useEffect(() => {
     const savedTemplates = localStorage.getItem('cpme_templates');
     if (savedTemplates) {
       try {
         const parsedTemplates = JSON.parse(savedTemplates);
+        // Merge with default templates
         const allTemplates = [...templates];
         
+        // Add any saved templates that aren't already in the default list
         parsedTemplates.forEach((savedTemplate: Template) => {
           if (!allTemplates.some(t => t.id === savedTemplate.id)) {
             allTemplates.push(savedTemplate);
@@ -91,7 +92,9 @@ const TemplateManager: React.FC = () => {
     }
   }, []);
   
+  // Save templates to localStorage whenever they change
   useEffect(() => {
+    // Only save user-created templates, not the default ones
     const userTemplates = templates.filter(t => !t.permanent || t.savedBy !== 'system');
     localStorage.setItem('cpme_templates', JSON.stringify(userTemplates));
   }, [templates]);
@@ -101,15 +104,13 @@ const TemplateManager: React.FC = () => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      if (file.type === 'application/pdf' || 
-          file.type === 'application/msword' || 
-          file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        
+      if (file.type === 'application/pdf') {
         setSelectedFile(file);
         toast.success('Fichier sélectionné', {
           description: `"${file.name}" a été sélectionné.`
         });
         
+        // Auto-detect type from filename
         if (file.name.toLowerCase().includes('appel')) {
           setNewTemplateType('appel');
         } else if (file.name.toLowerCase().includes('facture')) {
@@ -118,11 +119,12 @@ const TemplateManager: React.FC = () => {
           setNewTemplateType('rappel');
         }
         
-        const nameWithoutExtension = file.name.replace(/\.(pdf|doc|docx)$/i, '');
+        // Auto-suggest name from filename
+        const nameWithoutExtension = file.name.replace('.pdf', '');
         setNewTemplateName(nameWithoutExtension);
       } else {
         toast.error('Type de fichier invalide', {
-          description: 'Veuillez sélectionner un fichier PDF, DOC ou DOCX.'
+          description: 'Veuillez sélectionner un fichier PDF.'
         });
       }
     }
@@ -131,7 +133,7 @@ const TemplateManager: React.FC = () => {
   const handleUpload = async () => {
     if (!selectedFile) {
       toast.error('Fichier manquant', {
-        description: 'Veuillez sélectionner un fichier.'
+        description: 'Veuillez sélectionner un fichier PDF.'
       });
       return;
     }
@@ -144,48 +146,34 @@ const TemplateManager: React.FC = () => {
     }
 
     try {
-      let documentType: 'pdf' | 'doc' | 'docx' = 'pdf';
-      if (selectedFile.type === 'application/msword') {
-        documentType = 'doc';
-      } else if (selectedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        documentType = 'docx';
-      }
-      
-      const fileBuffer = await selectedFile.arrayBuffer();
-      const documentFields = await documentProcessingService.detectFields(fileBuffer, selectedFile.type);
-      
-      const mappedFields = documentFields.map(f => f.name);
+      // Auto-map fields based on template type
+      let mappedFields = DEFAULT_FIELD_MAPPINGS.map(f => f.name);
       let mappingConfig: Record<string, string> = {};
       
-      if (documentFields.length > 0) {
-        documentFields.forEach(field => {
-          mappingConfig[field.name] = field.placeholder;
-        });
+      // For appel de cotisation templates, attempt auto-mapping
+      if (newTemplateType === 'appel' || 
+          selectedFile.name.toLowerCase().includes('appel')) {
         
-        toast.success('Champs automatiquement mappés', {
-          description: `${documentFields.length} champs ont été détectés et mappés.`
-        });
-      } else if (newTemplateType === 'appel') {
-        mappingConfig = {
-          'DATE ECHEANCE': '{{DATE ECHEANCE}}',
-          'Cotisation': '{{Cotisation}}',
-          'N° adh': '{{N° adh}}',
-          'SOCIETE': '{{SOCIETE}}',
-          'Dirigeant': '{{Dirigeant}}',
-          'E MAIL 1': '{{E MAIL 1}}',
-          'E Mail 2': '{{E Mail 2}}',
-          'Adresse': '{{Adresse}}',
-          'ville': '{{ville}}'
-        };
+        const fileBuffer = await selectedFile.arrayBuffer();
+        const csvHeaders = DEFAULT_FIELD_MAPPINGS.map(f => f.name);
+        const mappings = await pdfMappingService.autoMapFields(fileBuffer, csvHeaders);
+        
+        if (mappings.size > 0) {
+          mappedFields = Array.from(mappings.keys());
+          mappingConfig = Object.fromEntries(mappings);
+          
+          toast.success('Champs automatiquement mappés', {
+            description: `${mappings.size} champs ont été détectés et mappés.`
+          });
+        }
       }
 
       const newTemplate: Template = {
         id: Date.now().toString(),
         name: newTemplateName,
         type: newTemplateType,
-        documentType: documentType,
         date: new Date().toISOString().split('T')[0],
-        fields: mappedFields.length > 0 ? mappedFields : ['Entreprise', 'Adresse', 'Email'],
+        fields: mappedFields,
         fileUrl: URL.createObjectURL(selectedFile),
         file: selectedFile,
         savedBy: user?.name || user?.email || 'Anonymous',
@@ -201,8 +189,10 @@ const TemplateManager: React.FC = () => {
       setNewTemplateType('autre');
       setSelectedFile(null);
       
+      // Save mapping configuration if available
       if (Object.keys(mappingConfig).length > 0) {
-        await documentProcessingService.saveTemplateMapping(newTemplate.id, mappingConfig);
+        const mappingsMap = new Map(Object.entries(mappingConfig));
+        await pdfMappingService.saveTemplateMapping(newTemplate.id, mappingsMap);
       }
       
       toast.success('Modèle ajouté avec succès', {
@@ -299,12 +289,10 @@ const TemplateManager: React.FC = () => {
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
-      if (file.type === 'application/pdf' || 
-          file.type === 'application/msword' || 
-          file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        
+      if (file.type === 'application/pdf') {
         setSelectedFile(file);
         
+        // Auto-detect type from filename
         if (file.name.toLowerCase().includes('appel')) {
           setNewTemplateType('appel');
         } else if (file.name.toLowerCase().includes('facture')) {
@@ -313,7 +301,8 @@ const TemplateManager: React.FC = () => {
           setNewTemplateType('rappel');
         }
         
-        const nameWithoutExtension = file.name.replace(/\.(pdf|doc|docx)$/i, '');
+        // Auto-suggest name from filename
+        const nameWithoutExtension = file.name.replace('.pdf', '');
         setNewTemplateName(nameWithoutExtension);
         
         toast.success('Fichier sélectionné', {
@@ -321,7 +310,7 @@ const TemplateManager: React.FC = () => {
         });
       } else {
         toast.error('Type de fichier invalide', {
-          description: 'Veuillez sélectionner un fichier PDF, DOC ou DOCX.'
+          description: 'Veuillez sélectionner un fichier PDF.'
         });
       }
     }

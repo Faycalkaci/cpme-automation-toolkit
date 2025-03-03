@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import TemplateCard from './TemplateCard';
 import { Template } from './types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { FileText, File, Filter } from 'lucide-react';
+import { FileText, FileWord, Filter } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
 interface TemplateListProps {
   templates: Template[];
@@ -22,107 +23,91 @@ const TemplateList: React.FC<TemplateListProps> = ({
   openPreviewDialog,
   openSaveDialog,
 }) => {
-  const [activeTab, setActiveTab] = useState<string>('all');
-  const [activeDocFilter, setActiveDocFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pdf' | 'word'>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   
-  // Filter templates based on active tab and document type filter
+  // Filtre les templates en fonction de l'onglet actif et du filtre de type
   const filteredTemplates = templates.filter(template => {
-    const typeMatch = activeTab === 'all' || template.type === activeTab;
-    const docTypeMatch = activeDocFilter === 'all' || template.documentType === activeDocFilter;
-    return typeMatch && docTypeMatch;
+    // Filtre par type de document
+    if (activeTab === 'pdf' && template.documentType !== 'pdf') {
+      return false;
+    }
+    if (activeTab === 'word' && !['doc', 'docx'].includes(template.documentType || '')) {
+      return false;
+    }
+    
+    // Filtre par type de template
+    if (typeFilter !== 'all' && template.type !== typeFilter) {
+      return false;
+    }
+    
+    return true;
   });
   
-  // Count templates by type
-  const countByType = {
-    all: templates.length,
-    facture: templates.filter(t => t.type === 'facture').length,
-    appel: templates.filter(t => t.type === 'appel').length,
-    rappel: templates.filter(t => t.type === 'rappel').length,
-    autre: templates.filter(t => t.type === 'autre').length,
-  };
-  
-  // Count templates by document type
-  const countByDocType = {
-    all: templates.length,
-    pdf: templates.filter(t => t.documentType === 'pdf').length,
-    doc: templates.filter(t => t.documentType === 'doc').length,
-    docx: templates.filter(t => t.documentType === 'docx').length,
-  };
-
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-        <Tabs 
-          defaultValue="all" 
-          value={activeTab} 
-          onValueChange={setActiveTab} 
-          className="w-full sm:w-auto"
-        >
-          <TabsList className="grid grid-cols-5 w-full sm:w-auto">
-            <TabsTrigger value="all" className="relative">
-              Tous
-              <Badge variant="secondary" className="ml-1 text-xs">{countByType.all}</Badge>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as 'all' | 'pdf' | 'word')} className="w-full sm:w-auto">
+          <TabsList>
+            <TabsTrigger value="all" className="flex items-center">
+              Tous <Badge variant="outline" className="ml-2">{templates.length}</Badge>
             </TabsTrigger>
-            <TabsTrigger value="facture" className="relative">
-              Factures
-              <Badge variant="secondary" className="ml-1 text-xs">{countByType.facture}</Badge>
+            <TabsTrigger value="pdf" className="flex items-center">
+              <FileText className="h-4 w-4 mr-1" /> PDF
+              <Badge variant="outline" className="ml-2">
+                {templates.filter(t => t.documentType === 'pdf').length}
+              </Badge>
             </TabsTrigger>
-            <TabsTrigger value="appel" className="relative">
-              Appels
-              <Badge variant="secondary" className="ml-1 text-xs">{countByType.appel}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="rappel" className="relative">
-              Rappels
-              <Badge variant="secondary" className="ml-1 text-xs">{countByType.rappel}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="autre" className="relative">
-              Autres
-              <Badge variant="secondary" className="ml-1 text-xs">{countByType.autre}</Badge>
+            <TabsTrigger value="word" className="flex items-center">
+              <FileWord className="h-4 w-4 mr-1" /> Word
+              <Badge variant="outline" className="ml-2">
+                {templates.filter(t => ['doc', 'docx'].includes(t.documentType || '')).length}
+              </Badge>
             </TabsTrigger>
           </TabsList>
         </Tabs>
         
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setActiveDocFilter('all')}
-            className={activeDocFilter === 'all' ? 'bg-primary/10' : ''}
-          >
-            <Filter className="h-4 w-4 mr-1" />
-            Tous
-            <Badge variant="secondary" className="ml-1 text-xs">{countByDocType.all}</Badge>
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setActiveDocFilter('pdf')}
-            className={activeDocFilter === 'pdf' ? 'bg-primary/10' : ''}
-          >
-            <FileText className="h-4 w-4 mr-1" />
-            PDF
-            <Badge variant="secondary" className="ml-1 text-xs">{countByDocType.pdf}</Badge>
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setActiveDocFilter('doc')}
-            className={activeDocFilter === 'doc' || activeDocFilter === 'docx' ? 'bg-primary/10' : ''}
-          >
-            <File className="h-4 w-4 mr-1" />
-            DOC
-            <Badge variant="secondary" className="ml-1 text-xs">{countByDocType.doc + countByDocType.docx}</Badge>
-          </Button>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Type de document" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les types</SelectItem>
+              <SelectItem value="facture">Factures</SelectItem>
+              <SelectItem value="appel">Appels de cotisation</SelectItem>
+              <SelectItem value="rappel">Rappels</SelectItem>
+              <SelectItem value="autre">Autres</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {typeFilter !== 'all' && (
+            <Button variant="ghost" size="icon" onClick={() => setTypeFilter('all')}>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
       
       {filteredTemplates.length === 0 ? (
-        <div className="border border-dashed rounded-lg p-8 text-center">
-          <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">Aucun modèle trouvé</h3>
+        <div className="border border-dashed rounded-lg p-12 text-center space-y-4">
+          <div className="mx-auto w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+            {activeTab === 'pdf' ? (
+              <FileText className="h-6 w-6 text-slate-400" />
+            ) : activeTab === 'word' ? (
+              <FileWord className="h-6 w-6 text-slate-400" />
+            ) : (
+              <Filter className="h-6 w-6 text-slate-400" />
+            )}
+          </div>
+          <h3 className="text-lg font-medium">Aucun modèle trouvé</h3>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Aucun modèle ne correspond à vos critères de recherche. 
-            Essayez de changer vos filtres ou ajoutez de nouveaux modèles.
+            {activeTab === 'all' 
+              ? 'Aucun modèle ne correspond aux critères de filtrage actuels.'
+              : activeTab === 'pdf' 
+                ? 'Aucun modèle PDF ne correspond aux critères de filtrage actuels.'
+                : 'Aucun modèle Word ne correspond aux critères de filtrage actuels.'
+            }
           </p>
         </div>
       ) : (

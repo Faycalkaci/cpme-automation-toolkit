@@ -2,12 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { FileText, File, Download } from 'lucide-react';
+import { FileText, Download, Eye } from 'lucide-react';
 import { Template } from './types';
-import { documentProcessingService } from '@/services/documentProcessingService';
-import mammoth from 'mammoth';
-import { saveAs } from 'file-saver';
-import { toast } from 'sonner';
 
 interface PreviewDialogProps {
   open: boolean;
@@ -20,83 +16,80 @@ const PreviewDialog: React.FC<PreviewDialogProps> = ({
   onOpenChange,
   templateToPreview,
 }) => {
-  const [docContent, setDocContent] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
+  const [docPreviewHtml, setDocPreviewHtml] = useState<string | null>(null);
+  
   useEffect(() => {
-    if (open && templateToPreview && templateToPreview.file && 
-        (templateToPreview.documentType === 'doc' || templateToPreview.documentType === 'docx')) {
-      setIsLoading(true);
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        if (e.target?.result) {
-          try {
-            const result = await mammoth.convertToHtml({ arrayBuffer: e.target.result as ArrayBuffer });
-            setDocContent(result.value);
-          } catch (error) {
-            console.error('Error converting DOC to HTML:', error);
-            toast.error('Erreur lors de la conversion du document Word');
-            setDocContent('<p>Erreur lors de la conversion du document.</p>');
-          } finally {
-            setIsLoading(false);
-          }
-        }
-      };
-      reader.readAsArrayBuffer(templateToPreview.file);
+    // Pour les fichiers Word, convertir en HTML pour la prévisualisation
+    const convertDocToHtml = async () => {
+      if (!templateToPreview || !templateToPreview.file || 
+          (templateToPreview.documentType !== 'doc' && templateToPreview.documentType !== 'docx')) {
+        return;
+      }
+      
+      try {
+        const mammoth = (await import('mammoth')).default;
+        const arrayBuffer = await templateToPreview.file.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        setDocPreviewHtml(result.value);
+      } catch (error) {
+        console.error('Erreur lors de la conversion du document Word:', error);
+        setDocPreviewHtml('<div class="p-4">Erreur lors de la prévisualisation du document Word</div>');
+      }
+    };
+    
+    if (open && templateToPreview) {
+      if (templateToPreview.documentType === 'doc' || templateToPreview.documentType === 'docx') {
+        convertDocToHtml();
+      } else {
+        setDocPreviewHtml(null);
+      }
+    } else {
+      setDocPreviewHtml(null);
     }
   }, [open, templateToPreview]);
-
-  const handleDownload = () => {
-    if (templateToPreview && templateToPreview.file) {
-      saveAs(templateToPreview.file, templateToPreview.name + 
-        (templateToPreview.documentType === 'pdf' ? '.pdf' : 
-         templateToPreview.documentType === 'doc' ? '.doc' : '.docx'));
-    }
-  };
-
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center">
-            {templateToPreview?.documentType === 'pdf' ? (
-              <FileText className="h-5 w-5 mr-2" />
-            ) : (
-              <File className="h-5 w-5 mr-2" />
-            )}
-            Aperçu du modèle
-          </DialogTitle>
+          <DialogTitle>Aperçu du modèle</DialogTitle>
         </DialogHeader>
         
         {templateToPreview && (
           <div className="py-4">
-            {templateToPreview.documentType === 'pdf' && templateToPreview.file ? (
+            {/* Prévisualisation PDF */}
+            {templateToPreview.documentType === 'pdf' && templateToPreview.fileUrl && (
               <iframe 
                 src={templateToPreview.fileUrl} 
                 className="w-full h-[70vh] border rounded"
                 title={`Aperçu de ${templateToPreview.name}`}
               />
-            ) : templateToPreview.documentType === 'doc' || templateToPreview.documentType === 'docx' ? (
-              isLoading ? (
-                <div className="h-[70vh] flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                </div>
+            )}
+            
+            {/* Prévisualisation DOC/DOCX */}
+            {(templateToPreview.documentType === 'doc' || templateToPreview.documentType === 'docx') && (
+              docPreviewHtml ? (
+                <div 
+                  className="w-full h-[70vh] border rounded bg-white p-4 overflow-auto"
+                  dangerouslySetInnerHTML={{ __html: docPreviewHtml }}
+                />
               ) : (
-                <div className="w-full h-[70vh] border rounded overflow-auto bg-white p-6">
-                  <div 
-                    className="doc-preview" 
-                    dangerouslySetInnerHTML={{ __html: docContent }} 
-                  />
+                <div className="aspect-[3/4] bg-slate-100 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <FileText className="h-12 w-12 text-slate-400 mx-auto" />
+                    <p className="mt-4 text-slate-600">
+                      Chargement de l'aperçu du document Word...
+                    </p>
+                  </div>
                 </div>
               )
-            ) : (
+            )}
+            
+            {/* Fallback pour les fichiers non prévisualisables */}
+            {!templateToPreview.fileUrl && !docPreviewHtml && (
               <div className="aspect-[3/4] bg-slate-100 rounded-lg flex items-center justify-center">
                 <div className="text-center">
-                  {templateToPreview.documentType === 'pdf' ? (
-                    <FileText className="h-12 w-12 text-slate-400 mx-auto" />
-                  ) : (
-                    <File className="h-12 w-12 text-slate-400 mx-auto" />
-                  )}
+                  <FileText className="h-12 w-12 text-slate-400 mx-auto" />
                   <p className="mt-4 text-slate-600">
                     Aperçu non disponible
                   </p>
@@ -104,9 +97,9 @@ const PreviewDialog: React.FC<PreviewDialogProps> = ({
               </div>
             )}
             
-            <div className="mt-6">
-              <h3 className="font-medium mb-2">Champs à mapper :</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <div className="mt-4">
+              <h3 className="font-medium">Champs à mapper :</h3>
+              <div className="mt-2 grid grid-cols-2 gap-2">
                 {templateToPreview.fields.map((field, idx) => (
                   <div key={idx} className="flex items-center">
                     <div className="w-2 h-2 rounded-full bg-primary mr-2"></div>
@@ -118,15 +111,13 @@ const PreviewDialog: React.FC<PreviewDialogProps> = ({
           </div>
         )}
         
-        <DialogFooter className="flex justify-between items-center">
-          <Button 
-            variant="outline"
-            onClick={handleDownload}
-            disabled={!templateToPreview?.file}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Télécharger
-          </Button>
+        <DialogFooter className="flex justify-between">
+          {templateToPreview && templateToPreview.fileUrl && (
+            <Button variant="outline" onClick={() => window.open(templateToPreview.fileUrl, '_blank')}>
+              <Download className="h-4 w-4 mr-2" />
+              Télécharger
+            </Button>
+          )}
           <Button onClick={() => onOpenChange(false)}>
             Fermer
           </Button>

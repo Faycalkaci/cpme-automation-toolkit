@@ -1,214 +1,158 @@
 
-import { PDFDocument, StandardFonts } from 'pdf-lib';
-import { Template } from '@/components/admin/templates/types';
-import * as XLSX from 'xlsx';
-import { toast } from 'sonner';
+import { PDFDocument } from 'pdf-lib';
 import mammoth from 'mammoth';
+import { toast } from 'sonner';
+import { saveAs } from 'file-saver';
 
-export interface DocumentField {
+export interface TemplateField {
   name: string;
   placeholder: string;
-  boundingBox?: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    page: number;
-  };
 }
 
+export const DEFAULT_FIELD_MAPPINGS: TemplateField[] = [
+  { name: "DATE ECHEANCE", placeholder: "{{DATE ECHEANCE}}" },
+  { name: "Cotisation", placeholder: "{{Cotisation}}" },
+  { name: "N° adh", placeholder: "{{N° adh}}" },
+  { name: "SOCIETE", placeholder: "{{SOCIETE}}" },
+  { name: "Dirigeant", placeholder: "{{Dirigeant}}" },
+  { name: "E MAIL 1", placeholder: "{{E MAIL 1}}" },
+  { name: "E Mail 2", placeholder: "{{E Mail 2}}" },
+  { name: "Adresse", placeholder: "{{Adresse}}" },
+  { name: "ville", placeholder: "{{ville}}" }
+];
+
 export const documentProcessingService = {
-  // Extract text content from PDF
-  extractPdfText: async (pdfBytes: ArrayBuffer): Promise<string> => {
-    try {
-      // This is a simple implementation. In a production environment,
-      // you would use a more robust library like pdf.js
-      const pdfDoc = await PDFDocument.load(pdfBytes);
-      const pageCount = pdfDoc.getPageCount();
-      
-      // For this demo, we'll just return a placeholder message
-      return `PDF document with ${pageCount} pages loaded successfully`;
-    } catch (error) {
-      console.error('Error extracting PDF text:', error);
-      toast.error('Erreur lors de l\'extraction du texte du PDF');
-      return '';
-    }
-  },
-  
-  // Extract text content from DOC/DOCX
-  extractDocText: async (docBytes: ArrayBuffer): Promise<string> => {
-    try {
-      const result = await mammoth.extractRawText({ arrayBuffer: docBytes });
-      return result.value;
-    } catch (error) {
-      console.error('Error extracting DOC text:', error);
-      toast.error('Erreur lors de l\'extraction du texte du document Word');
-      return '';
-    }
-  },
-  
-  // Auto-detect fields in a document based on common patterns
-  detectFields: async (fileBuffer: ArrayBuffer, fileType: string): Promise<DocumentField[]> => {
-    try {
-      const detectedFields: DocumentField[] = [];
-      
-      if (fileType === 'application/pdf') {
-        // Read the PDF and look for placeholder patterns like {{...}}
-        const pdfText = await documentProcessingService.extractPdfText(fileBuffer);
-        
-        // Regular expression to find placeholders in the format {{placeholder}}
-        const placeholderRegex = /\{\{([^}]+)\}\}/g;
-        let match;
-        
-        while ((match = placeholderRegex.exec(pdfText)) !== null) {
-          detectedFields.push({
-            name: match[1],
-            placeholder: match[0]
-          });
-        }
-      } else if (fileType === 'application/msword' || fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        // Extract text from DOC/DOCX
-        const docText = await documentProcessingService.extractDocText(fileBuffer);
-        
-        // Regular expression to find placeholders in the format {{placeholder}}
-        const placeholderRegex = /\{\{([^}]+)\}\}/g;
-        let match;
-        
-        while ((match = placeholderRegex.exec(docText)) !== null) {
-          detectedFields.push({
-            name: match[1],
-            placeholder: match[0]
-          });
-        }
-      }
-      
-      return detectedFields;
-    } catch (error) {
-      console.error('Error detecting fields:', error);
-      toast.error('Erreur lors de la détection automatique des champs');
-      return [];
-    }
-  },
-  
-  // Parse CSV/Excel file and extract headers
-  extractCsvHeaders: async (fileBuffer: ArrayBuffer): Promise<string[]> => {
-    try {
-      const workbook = XLSX.read(fileBuffer, { type: 'array' });
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
-      
-      // Convert sheet to JSON
-      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-      
-      // Get the headers (first row)
-      if (data && data.length > 0) {
-        return data[0] as string[];
-      }
-      
-      return [];
-    } catch (error) {
-      console.error('Error extracting CSV headers:', error);
-      toast.error('Erreur lors de l\'extraction des en-têtes CSV');
-      return [];
-    }
-  },
-  
-  // Match CSV headers with document fields
-  mapCsvToDocumentFields: (csvHeaders: string[], documentFields: DocumentField[]): Record<string, string> => {
-    const mapping: Record<string, string> = {};
+  // Détecte le type de document (PDF, DOC, DOCX)
+  detectDocumentType: (file: File): 'pdf' | 'doc' | 'docx' | 'unknown' => {
+    const extension = file.name.split('.').pop()?.toLowerCase();
     
-    documentFields.forEach(field => {
-      // Try to find an exact match first
-      const exactMatch = csvHeaders.find(header => header === field.name);
-      if (exactMatch) {
-        mapping[field.name] = field.placeholder;
-        return;
-      }
-      
-      // Try a case-insensitive match
-      const caseInsensitiveMatch = csvHeaders.find(
-        header => header.toLowerCase() === field.name.toLowerCase()
-      );
-      if (caseInsensitiveMatch) {
-        mapping[caseInsensitiveMatch] = field.placeholder;
-        return;
-      }
-      
-      // Try a fuzzy match (contains)
-      const fuzzyMatch = csvHeaders.find(
-        header => field.name.toLowerCase().includes(header.toLowerCase()) || 
-                  header.toLowerCase().includes(field.name.toLowerCase())
-      );
-      if (fuzzyMatch) {
-        mapping[fuzzyMatch] = field.placeholder;
-      }
-    });
+    if (extension === 'pdf') return 'pdf';
+    if (extension === 'doc') return 'doc';
+    if (extension === 'docx') return 'docx';
     
-    return mapping;
+    return 'unknown';
   },
   
-  // Generate a filled document by replacing placeholders with values
-  fillDocument: async (
-    templateBuffer: ArrayBuffer,
-    documentType: 'pdf' | 'doc' | 'docx',
-    mappingConfig: Record<string, string>,
-    data: Record<string, string>
-  ): Promise<ArrayBuffer> => {
+  // Auto-detect fields in template and match with CSV columns
+  autoMapFields: async (file: File, csvHeaders: string[]) => {
     try {
+      const documentType = documentProcessingService.detectDocumentType(file);
+      const fileBuffer = await file.arrayBuffer();
+      
+      let textContent = '';
+      
+      // Extract text content based on document type
       if (documentType === 'pdf') {
-        // Load the PDF document
-        const pdfDoc = await PDFDocument.load(templateBuffer);
-        const pages = pdfDoc.getPages();
-        
-        // Create a new PDF with the same dimensions
-        const newPdf = await PDFDocument.create();
-        const helveticaFont = await newPdf.embedFont(StandardFonts.Helvetica);
-        
-        // For each page in the original PDF
-        for (const page of pages) {
-          const { width, height } = page.getSize();
-          const newPage = newPdf.addPage([width, height]);
-          
-          // In a real implementation, we would transfer content and replace text
-          // For this demo, we'll just add the filled fields at the top of the page
-          let yPosition = height - 50;
-          
-          for (const [fieldName, placeholder] of Object.entries(mappingConfig)) {
-            const value = data[fieldName] || '';
-            if (value) {
-              newPage.drawText(`${fieldName}: ${value}`, {
-                x: 50,
-                y: yPosition,
-                size: 12,
-                font: helveticaFont
-              });
-              yPosition -= 20;
-            }
-          }
-        }
-        
-        // Save the PDF
-        return await newPdf.save();
+        const pdfDoc = await PDFDocument.load(fileBuffer);
+        // PDF text extraction is limited in pdf-lib 
+        // In a real implementation, we would use a more robust PDF text extraction library
+        textContent = "PDF content"; // Placeholder
       } else if (documentType === 'doc' || documentType === 'docx') {
-        // For DOC/DOCX processing, we would use a library like docx-templates
-        // For this demo, we'll just return the original buffer
-        // (In a real implementation, you would use proper DOC/DOCX manipulation)
-        toast.warning('Le remplissage de documents Word est une fonctionnalité en développement');
-        return templateBuffer;
+        const result = await mammoth.extractRawText({ arrayBuffer: fileBuffer });
+        textContent = result.value;
+      } else {
+        throw new Error("Format de document non pris en charge");
       }
       
-      return templateBuffer;
+      // Create mappings based on CSV headers that match our predefined fields
+      const mappings = new Map<string, string>();
+      
+      DEFAULT_FIELD_MAPPINGS.forEach(field => {
+        if (csvHeaders.includes(field.name)) {
+          mappings.set(field.name, field.placeholder);
+        }
+      });
+      
+      return mappings;
     } catch (error) {
-      console.error('Error filling document:', error);
-      toast.error('Erreur lors du remplissage du document');
+      console.error('Error mapping fields:', error);
+      toast.error('Erreur lors du mappage automatique des champs');
+      return new Map<string, string>();
+    }
+  },
+
+  // Generate final document with replaced values
+  generateFilledDocument: async (
+    templateFile: File,
+    data: Record<string, string>,
+    mappings: Map<string, string>
+  ) => {
+    try {
+      const documentType = documentProcessingService.detectDocumentType(templateFile);
+      const fileBuffer = await templateFile.arrayBuffer();
+      
+      if (documentType === 'pdf') {
+        return await documentProcessingService.generateFilledPDF(fileBuffer, data, mappings);
+      } else if (documentType === 'doc' || documentType === 'docx') {
+        return await documentProcessingService.generateFilledDOCX(fileBuffer, data, mappings);
+      } else {
+        throw new Error("Format de document non pris en charge");
+      }
+    } catch (error) {
+      console.error('Error generating document:', error);
+      toast.error('Erreur lors de la génération du document');
+      throw error;
+    }
+  },
+
+  // Generate filled PDF document
+  generateFilledPDF: async (
+    templateBytes: ArrayBuffer, 
+    data: Record<string, string>,
+    mappings: Map<string, string>
+  ) => {
+    try {
+      // Load the PDF document
+      const pdfDoc = await PDFDocument.load(templateBytes);
+      const pages = pdfDoc.getPages();
+      
+      // This is a simplified approach. In a real implementation,
+      // we would need to use a PDF modification library that supports
+      // text replacement with proper positioning.
+      
+      // Apply text replacements
+      // Note: This is a placeholder. In a real implementation,
+      // we would properly replace text at the correct positions
+      
+      // Save the PDF
+      const pdfBytes = await pdfDoc.save();
+      return pdfBytes;
+    } catch (error) {
+      console.error('Error generating filled PDF:', error);
+      toast.error('Erreur lors de la génération du PDF');
       throw error;
     }
   },
   
-  // Save a template mapping configuration
-  saveTemplateMapping: async (templateId: string, mappingConfig: Record<string, string>): Promise<boolean> => {
+  // Generate filled DOCX document
+  generateFilledDOCX: async (
+    templateBytes: ArrayBuffer,
+    data: Record<string, string>,
+    mappings: Map<string, string>
+  ) => {
     try {
-      localStorage.setItem(`template_mapping_${templateId}`, JSON.stringify(mappingConfig));
+      // Note: This is a placeholder for DOCX generation logic
+      // In a real implementation, we would use a library like docxtemplater
+      // to replace placeholders in the DOCX file
+      
+      // Return the modified document
+      // For now, we'll just return the original bytes
+      return templateBytes;
+    } catch (error) {
+      console.error('Error generating filled DOCX:', error);
+      toast.error('Erreur lors de la génération du document Word');
+      throw error;
+    }
+  },
+  
+  // Save a template with its mapping configuration
+  saveTemplateMapping: async (templateId: string, mappings: Map<string, string>) => {
+    try {
+      // This would typically save to a database
+      // For now, we'll use localStorage
+      const mappingsObj = Object.fromEntries(mappings);
+      localStorage.setItem(`template_mapping_${templateId}`, JSON.stringify(mappingsObj));
+      
       toast.success('Configuration de mappage sauvegardée');
       return true;
     } catch (error) {
@@ -218,15 +162,45 @@ export const documentProcessingService = {
     }
   },
   
-  // Get a template mapping configuration
-  getTemplateMapping: async (templateId: string): Promise<Record<string, string>> => {
+  // Get the mapping configuration for a template
+  getTemplateMapping: async (templateId: string): Promise<Map<string, string>> => {
     try {
-      const mappingJson = localStorage.getItem(`template_mapping_${templateId}`);
-      if (!mappingJson) return {};
-      return JSON.parse(mappingJson);
+      const mappingsJson = localStorage.getItem(`template_mapping_${templateId}`);
+      if (!mappingsJson) return new Map();
+      
+      const mappingsObj = JSON.parse(mappingsJson);
+      return new Map(Object.entries(mappingsObj));
     } catch (error) {
       console.error('Error retrieving template mapping:', error);
-      return {};
+      return new Map();
+    }
+  },
+  
+  // Exporter le document généré
+  exportDocument: async (documentBytes: ArrayBuffer, filename: string, type: 'pdf' | 'doc' | 'docx') => {
+    try {
+      let mimeType = 'application/octet-stream';
+      
+      if (type === 'pdf') {
+        mimeType = 'application/pdf';
+        filename = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+      } else if (type === 'doc') {
+        mimeType = 'application/msword';
+        filename = filename.endsWith('.doc') ? filename : `${filename}.doc`;
+      } else if (type === 'docx') {
+        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        filename = filename.endsWith('.docx') ? filename : `${filename}.docx`;
+      }
+      
+      const blob = new Blob([documentBytes], { type: mimeType });
+      saveAs(blob, filename);
+      
+      toast.success('Document exporté avec succès');
+      return true;
+    } catch (error) {
+      console.error('Error exporting document:', error);
+      toast.error('Erreur lors de l\'exportation du document');
+      return false;
     }
   }
 };

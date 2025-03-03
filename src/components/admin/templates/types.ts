@@ -3,7 +3,6 @@ export type Template = {
   id: string;
   name: string;
   type: 'facture' | 'appel' | 'rappel' | 'autre';
-  documentType: 'pdf' | 'doc' | 'docx'; // Add document type field
   date: string;
   fields: string[];
   fileUrl: string;
@@ -16,4 +15,6 @@ export type Template = {
   lastModified?: string;
   mappingConfig?: Record<string, string>;
   isPublic?: boolean;
+  // Added field for document type
+  documentType: 'pdf' | 'doc' | 'docx';
 };
