@@ -4,11 +4,10 @@
 @tailwind utilities;
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
+    --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     
     --card: 0 0% 100%;
@@ -96,10 +95,6 @@
     @apply h-full w-full max-w-none p-0 m-0;
     text-align: left;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', sans-serif;
-  }
 }
 
 @layer utilities {
@@ -125,22 +120,6 @@
   
   .gradient-text {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-cpme-dark via-cpme-light to-cpme-dark;
-  }
-  
-  .card-hover {
-    @apply transition-all duration-300 hover:shadow-card hover:-translate-y-1;
-  }
-  
-  .card-premium {
-    @apply border-0 bg-gradient-to-br from-white to-slate-50 shadow-card;
-  }
-  
-  .input-premium {
-    @apply rounded-md border border-slate-200 bg-white/50 px-3 py-2 shadow-sm focus:border-primary focus:ring-1 focus:ring-primary/30;
-  }
-  
-  .btn-premium {
-    @apply rounded-md bg-primary shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5;
   }
 }
 
@@ -218,41 +197,4 @@
   100% {
     left: 100%;
   }
-}
-
-/* Card effect */
-.card-effect {
-  @apply rounded-xl bg-white p-6 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-md;
-}
-
-/* Badge effect */
-.badge-effect {
-  @apply rounded-full px-2.5 py-0.5 text-xs font-medium bg-primary/10 text-primary;
-}
-
-/* Button effects */
-.btn-effect {
-  @apply relative overflow-hidden rounded-md px-4 py-2 transition-all duration-300 bg-primary text-white shadow-sm hover:shadow-md;
-}
-
-/* Table styling */
-.table-modern {
-  @apply w-full rounded-lg overflow-hidden border border-slate-200;
-}
-
-.table-modern th {
-  @apply bg-slate-50 px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider;
-}
-
-.table-modern td {
-  @apply px-4 py-3 border-t border-slate-100 text-sm;
-}
-
-.table-modern tr:hover {
-  @apply bg-slate-50/50;
-}
-
-/* Icon effects */
-.icon-effect {
-  @apply p-2 rounded-full bg-primary/10 text-primary transition-all duration-300 hover:bg-primary/20;
 }

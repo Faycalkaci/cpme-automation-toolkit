@@ -33,26 +33,24 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
   const DocumentIcon = template.documentType === 'pdf' ? FileText : File;
   
   return (
-    <Card className={`overflow-hidden transition-all duration-300 hover:shadow-card hover:-translate-y-1 ${template.permanent ? 'border-primary/30' : ''}`}>
+    <Card className={`overflow-hidden ${template.permanent ? 'border-primary/40' : ''}`}>
       <CardHeader className={`${template.permanent ? 'bg-primary/5' : 'bg-slate-50'} pb-4`}>
         <div className="flex justify-between items-start">
           <CardTitle className="flex items-center">
-            <div className={`mr-3 h-9 w-9 rounded-full flex items-center justify-center ${template.documentType === 'pdf' ? 'bg-primary/15 text-primary' : 'bg-blue-500/15 text-blue-600'}`}>
-              <DocumentIcon className="h-5 w-5" />
-            </div>
-            <span className="font-medium">{template.name}</span>
+            <DocumentIcon className={`h-5 w-5 mr-2 ${template.documentType === 'pdf' ? 'text-primary' : 'text-blue-600'}`} />
+            {template.name}
           </CardTitle>
           {template.permanent && (
-            <span className="bg-primary/15 text-primary text-xs px-2.5 py-1 rounded-full font-medium">
+            <span className="bg-primary/20 text-primary text-xs px-2 py-1 rounded-full">
               Permanent
             </span>
           )}
         </div>
-        <CardDescription className="flex items-center gap-2 ml-12">
+        <CardDescription className="flex items-center gap-2">
           {template.type === 'facture' ? 'Modèle de facture' : 
            template.type === 'appel' ? 'Modèle d\'appel de cotisation' :
            template.type === 'rappel' ? 'Modèle de rappel' : 'Autre modèle'}
-          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+          <span className={`px-2 py-0.5 rounded text-xs ${
             template.documentType === 'pdf' ? 'bg-red-100 text-red-700' :
             'bg-blue-100 text-blue-700'
           }`}>
@@ -62,36 +60,34 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-4">
-        <div className="text-sm text-slate-500 mb-3 flex items-center">
-          <span className="inline-block w-1.5 h-1.5 bg-slate-300 rounded-full mr-2"></span>
+        <div className="text-sm text-slate-500 mb-3">
           Champs disponibles : {template.fields.length}
         </div>
         <div className="flex flex-wrap gap-2">
           {template.fields.slice(0, 3).map((field, idx) => (
-            <div key={idx} className="bg-slate-100 text-slate-700 text-xs px-2 py-1 rounded-full">
+            <div key={idx} className="bg-slate-100 text-slate-700 text-xs px-2 py-1 rounded">
               {field}
             </div>
           ))}
           {template.fields.length > 3 && (
-            <div className="bg-slate-100 text-slate-700 text-xs px-2 py-1 rounded-full">
+            <div className="bg-slate-100 text-slate-700 text-xs px-2 py-1 rounded">
               +{template.fields.length - 3} autres
             </div>
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between border-t bg-slate-50/70 py-3">
+      <CardFooter className="flex justify-between border-t bg-slate-50 py-3">
         <div className="text-xs text-slate-500">
           {template.savedBy ? `Par ${template.savedBy}` : 'Ajouté le'} {template.date}
         </div>
-        <div className="flex space-x-1">
-          <Button variant="ghost" size="sm" className="rounded-full" onClick={() => openPreviewDialog(template)} title="Aperçu">
+        <div className="flex space-x-2">
+          <Button variant="ghost" size="sm" onClick={() => openPreviewDialog(template)}>
             <Eye className="h-4 w-4" />
           </Button>
           {template.fileUrl && (
             <Button 
               variant="ghost" 
               size="sm" 
-              className="rounded-full"
               onClick={() => window.open(template.fileUrl, '_blank')}
               title="Télécharger"
             >
@@ -99,17 +95,15 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
             </Button>
           )}
           {!template.permanent && canSaveTemplate && (
-            <Button variant="ghost" size="sm" className="rounded-full" onClick={() => openSaveDialog(template)} title="Enregistrer">
+            <Button variant="ghost" size="sm" onClick={() => openSaveDialog(template)}>
               <Check className="h-4 w-4 text-green-600" />
             </Button>
           )}
           <Button 
             variant="ghost" 
             size="sm" 
-            className="rounded-full"
             onClick={() => openDeleteDialog(template)}
             disabled={template.permanent && !(template.savedBy === 'system')}
-            title="Supprimer"
           >
             <Trash2 className={`h-4 w-4 ${template.permanent ? 'text-slate-400' : 'text-destructive'}`} />
           </Button>
