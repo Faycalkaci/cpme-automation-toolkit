@@ -35,7 +35,7 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221 83% 53%;
     
-    --radius: 0.5rem;
+    --radius: 0.75rem;
     
     --cpme-light: 217 91% 65%;
     --cpme-default: 221 83% 53%;
@@ -99,7 +99,7 @@
 
 @layer utilities {
   .glass {
-    @apply bg-white/30 backdrop-blur-md border border-white/30 shadow-glass;
+    @apply bg-white/40 backdrop-blur-md border border-white/30 shadow-glass;
   }
   
   .glass-dark {
@@ -123,7 +123,7 @@
   }
   
   .elevated-card {
-    @apply bg-white border border-slate-100 shadow-soft rounded-lg hover:shadow-md transition-all duration-200;
+    @apply bg-white border border-slate-100 shadow-soft rounded-xl hover:shadow-md transition-all duration-200;
   }
   
   .icon-container {
@@ -232,14 +232,14 @@
 
 /* Button styles */
 .btn-primary {
-  @apply bg-primary text-white rounded-md px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300;
+  @apply bg-primary text-white rounded-xl px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300;
 }
 
 .btn-secondary {
-  @apply bg-white border border-slate-200 text-slate-700 rounded-md px-4 py-2 shadow-sm hover:border-primary/30 hover:text-primary transition-all duration-300;
+  @apply bg-white border border-slate-200 text-slate-700 rounded-xl px-4 py-2 shadow-sm hover:border-primary/30 hover:text-primary transition-all duration-300;
 }
 
 /* Form controls */
 .form-control {
-  @apply rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-transparent transition-all duration-300;
+  @apply rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-transparent transition-all duration-300;
 }

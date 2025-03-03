@@ -19,13 +19,13 @@ const StatCard: React.FC<StatCardProps> = ({
   change,
 }) => {
   return (
-    <Card className="border-none shadow-soft hover:shadow-md transition-all">
+    <Card className="border-none shadow-soft hover:shadow-md transition-all duration-300 bg-white rounded-xl overflow-hidden">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-sm font-medium text-slate-500">
             {title}
           </CardTitle>
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
             {icon}
           </div>
         </div>
@@ -34,7 +34,7 @@ const StatCard: React.FC<StatCardProps> = ({
         <div className="text-3xl font-bold text-slate-800">{value}</div>
         {description && <p className="text-xs text-slate-500 mt-1">{description}</p>}
         {change && (
-          <p className={`text-xs mt-2 flex items-center ${change.startsWith('+') ? 'text-green-500' : change.startsWith('-') ? 'text-red-500' : 'text-slate-500'}`}>
+          <p className={`text-xs mt-2 flex items-center font-medium ${change.startsWith('+') ? 'text-green-500' : change.startsWith('-') ? 'text-red-500' : 'text-slate-500'}`}>
             {change}
           </p>
         )}

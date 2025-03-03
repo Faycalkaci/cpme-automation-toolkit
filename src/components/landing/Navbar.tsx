@@ -15,28 +15,28 @@ const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-subtle">
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md shadow-subtle">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex justify-between items-center py-4">
           <Link to="/" className="flex items-center space-x-2">
-            <div className="h-9 w-9 rounded-md bg-blue-gradient flex items-center justify-center text-white font-bold text-lg">CT</div>
+            <div className="h-10 w-10 rounded-lg bg-blue-gradient flex items-center justify-center text-white font-bold text-lg">CT</div>
             <span className="text-xl font-bold text-slate-800">CPME Tool</span>
           </Link>
           
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-sm font-medium text-slate-700 hover:text-cpme transition-colors">
+            <a href="#features" className="text-sm font-medium text-slate-700 hover:text-primary transition-colors">
               Fonctionnalités
             </a>
-            <a href="#pricing" className="text-sm font-medium text-slate-700 hover:text-cpme transition-colors">
+            <a href="#pricing" className="text-sm font-medium text-slate-700 hover:text-primary transition-colors">
               Tarifs
             </a>
-            <a href="#about" className="text-sm font-medium text-slate-700 hover:text-cpme transition-colors">
+            <a href="#about" className="text-sm font-medium text-slate-700 hover:text-primary transition-colors">
               À propos
             </a>
             <Button 
               variant="ghost" 
               onClick={scrollToHowItWorks}
-              className="text-sm font-medium text-slate-700 hover:text-cpme transition-colors flex items-center"
+              className="text-sm font-medium text-slate-700 hover:text-primary transition-colors flex items-center"
             >
               Comment ça marche
               <ChevronDown className="ml-1 h-4 w-4" />
@@ -44,10 +44,10 @@ const Navbar = () => {
           </nav>
 
           <div className="flex items-center space-x-2">
-            <Button variant="outline" onClick={() => navigate('/login')} className="shadow-subtle">
+            <Button variant="outline" onClick={() => navigate('/login')} className="shadow-subtle hover:shadow-md transition-all">
               Se connecter
             </Button>
-            <Button onClick={() => navigate('/register')} className="shadow-md hover:shadow-lg transition-all">
+            <Button onClick={() => navigate('/register')} className="shadow-md hover:shadow-lg transition-all bg-primary text-white">
               S'inscrire
             </Button>
           </div>
