@@ -61,15 +61,19 @@ export const useLoginForm = () => {
       if (loginResult) {
         resetOnSuccess();
         
-        // Mise à jour du profil utilisateur
-        const userProfile = await firestoreService.users.getByEmail(data.email);
-        
-        if (userProfile) {
-          // Mettre à jour les informations de dernière connexion
-          await firestoreService.users.update(userProfile.id!, {
-            lastLogin: Timestamp.now(),
-            lastLocation: userProfile.lastLocation || ''
-          });
+        // Mise à jour du profil utilisateur - ne pas bloquer en cas d'erreur
+        try {
+          const userProfile = await firestoreService.users.getByEmail(data.email);
+          
+          if (userProfile) {
+            // Mettre à jour les informations de dernière connexion
+            await firestoreService.users.update(userProfile.id!, {
+              lastLogin: Timestamp.now(),
+              lastLocation: userProfile.lastLocation || ''
+            });
+          }
+        } catch (profileError) {
+          console.warn("Erreur lors de la mise à jour du profil, mais la connexion continue:", profileError);
         }
         
         navigate('/dashboard');

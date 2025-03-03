@@ -25,31 +25,49 @@ export const SocialLogin: React.FC = () => {
       console.log("Connexion réussie, redirection...");
       
       if (user && user.email) {
-        // Check if user profile exists
-        let userProfile = await firestoreService.users.getByEmail(user.email);
-        
-        // Create profile if it doesn't exist
-        if (!userProfile && user.email) {
-          const newUser = {
-            email: user.email,
-            name: user.displayName || user.email.split('@')[0],
-            role: 'user' as const,
-            devices: [],
-            lastLogin: Timestamp.now(),
-            lastLocation: ''
-          };
+        // Essayer de récupérer le profil utilisateur, mais ne pas bloquer si ça échoue
+        try {
+          let userProfile = await firestoreService.users.getByEmail(user.email);
           
-          const userId = await firestoreService.users.create(newUser);
-          console.log("Nouveau profil utilisateur créé:", userId);
-        } else if (userProfile) {
-          // Update existing profile
-          await firestoreService.users.update(userProfile.id!, {
-            lastLogin: Timestamp.now(),
-            lastLocation: userProfile.lastLocation || ''
-          });
-          console.log("Profil utilisateur mis à jour");
+          // Créer un profil s'il n'existe pas
+          if (!userProfile && user.email) {
+            try {
+              const newUser = {
+                email: user.email,
+                name: user.displayName || user.email.split('@')[0],
+                role: 'user' as const,
+                devices: [],
+                lastLogin: Timestamp.now(),
+                lastLocation: ''
+              };
+              
+              const userId = await firestoreService.users.create(newUser);
+              console.log("Nouveau profil utilisateur créé:", userId);
+            } catch (profileError) {
+              console.warn("Impossible de créer le profil utilisateur, mais la connexion continue:", profileError);
+            }
+          } else if (userProfile) {
+            // Mettre à jour le profil existant
+            try {
+              await firestoreService.users.update(userProfile.id!, {
+                lastLogin: Timestamp.now(),
+                lastLocation: userProfile.lastLocation || ''
+              });
+              console.log("Profil utilisateur mis à jour");
+            } catch (updateError) {
+              console.warn("Impossible de mettre à jour le profil utilisateur, mais la connexion continue:", updateError);
+            }
+          }
+        } catch (profileError) {
+          console.warn("Erreur lors de l'accès au profil utilisateur, mais la connexion continue:", profileError);
         }
       }
+      
+      // Même en cas d'erreur Firestore, on valide la connexion puisque l'authentification est réussie
+      toast({
+        title: "Connexion Google réussie",
+        description: "Vous êtes maintenant connecté",
+      });
       
       navigate('/dashboard');
     } catch (error: any) {
