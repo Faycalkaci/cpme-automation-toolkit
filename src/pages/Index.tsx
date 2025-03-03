@@ -3,7 +3,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, ArrowRight, Shield, Database, FileText } from 'lucide-react';
+import { CheckCircle, ArrowRight, Shield, Database, FileText, Mail, Video } from 'lucide-react';
+import { IntroVideo } from '@/components/onboarding/IntroVideo';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -18,6 +19,11 @@ const Index = () => {
       icon: <FileText className="h-6 w-6 text-primary" />,
       title: 'Génération de PDF',
       description: 'Générez automatiquement des PDF à partir de vos données.'
+    },
+    {
+      icon: <Mail className="h-6 w-6 text-primary" />,
+      title: 'Envoi par email',
+      description: 'Envoyez directement les documents générés par email à vos adhérents.'
     },
     {
       icon: <Shield className="h-6 w-6 text-primary" />,
@@ -103,8 +109,29 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Video Tutorial Section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold text-slate-900">Découvrez CPME Tool en action</h2>
+            <p className="mt-4 text-lg text-slate-600">
+              Notre vidéo de démonstration vous montre comment automatiser votre processus de facturation en moins d'une minute.
+            </p>
+          </div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+            viewport={{ once: true }}
+          >
+            <IntroVideo />
+          </motion.div>
+        </div>
+      </section>
+
       {/* Features Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-slate-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-slate-900">Simplifiez votre gestion documentaire</h2>
@@ -118,7 +145,7 @@ const Index = () => {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.1 }}
-            className="grid md:grid-cols-3 gap-8"
+            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
           >
             {features.map((feature, index) => (
               <motion.div
@@ -138,7 +165,7 @@ const Index = () => {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 bg-slate-50">
+      <section className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-slate-900">Comment ça fonctionne</h2>
@@ -191,6 +218,83 @@ const Index = () => {
               ))}
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Subscription Plans Section */}
+      <section className="py-20 bg-slate-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-900">Des licences adaptées à vos besoins</h2>
+            <p className="mt-4 text-lg text-slate-600">
+              Choisissez le forfait qui correspond à la taille de votre CPME
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                title: "Licence Standard",
+                price: "49€",
+                period: "par mois",
+                features: [
+                  "Jusqu'à 3 utilisateurs",
+                  "500 documents par mois",
+                  "Modèles prédéfinis",
+                  "Support par email"
+                ]
+              },
+              {
+                title: "Licence Pro",
+                price: "99€",
+                period: "par mois",
+                popular: true,
+                features: [
+                  "Jusqu'à 10 utilisateurs",
+                  "Documents illimités",
+                  "Modèles personnalisables",
+                  "Support prioritaire"
+                ]
+              },
+              {
+                title: "Licence Enterprise",
+                price: "199€",
+                period: "par mois",
+                features: [
+                  "Utilisateurs illimités",
+                  "Documents illimités",
+                  "Modèles 100% personnalisés",
+                  "Support dédié 24/7"
+                ]
+              }
+            ].map((plan, index) => (
+              <div key={index} className={`bg-white rounded-lg shadow-soft border ${plan.popular ? 'border-primary ring-2 ring-primary/20' : 'border-slate-100'} overflow-hidden`}>
+                {plan.popular && (
+                  <div className="bg-primary text-white text-center py-1.5 text-sm font-medium">
+                    Recommandé
+                  </div>
+                )}
+                <div className="p-8">
+                  <h3 className="text-xl font-bold text-slate-900">{plan.title}</h3>
+                  <div className="mt-4 flex items-baseline">
+                    <span className="text-4xl font-bold text-slate-900">{plan.price}</span>
+                    <span className="ml-1 text-slate-500">{plan.period}</span>
+                  </div>
+                  <ul className="mt-6 space-y-4">
+                    {plan.features.map((feature, i) => (
+                      <li key={i} className="flex items-center">
+                        <CheckCircle className="h-5 w-5 text-cpme mr-2 flex-shrink-0" />
+                        <span className="text-slate-600">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button className="w-full mt-8" variant={plan.popular ? "default" : "outline"}>
+                    Sélectionner
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

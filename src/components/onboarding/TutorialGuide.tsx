@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Check, FileSpreadsheet, FileText, Mail } from 'lucide-react';
+import { ArrowRight, FileUp, TableProperties, FileCheck, Mail, Check, Clipboard, FileSpreadsheet, FileText, Filter } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface TutorialStep {
   title: string;
@@ -30,17 +31,32 @@ export const TutorialGuide = () => {
     },
     {
       title: "Importez vos données",
-      description: "Commencez par importer votre fichier Excel ou CSV contenant les informations de vos adhérents.",
-      icon: <FileSpreadsheet className="h-12 w-12 text-blue-500" />
+      description: "Commencez par importer votre fichier Excel ou CSV contenant les informations de vos adhérents dans la section Spreadsheets.",
+      icon: <FileUp className="h-12 w-12 text-blue-500" />
     },
     {
-      title: "Générez des documents",
-      description: "Sélectionnez les adhérents et générez automatiquement les documents PDF comme les appels de cotisation.",
-      icon: <FileText className="h-12 w-12 text-green-500" />
+      title: "Visualisez et filtrez vos données",
+      description: "Après l'importation, vous pouvez visualiser, rechercher et filtrer facilement les informations de vos adhérents.",
+      icon: <TableProperties className="h-12 w-12 text-blue-500" />
+    },
+    {
+      title: "Sélectionnez vos adhérents",
+      description: "Cochez les adhérents pour lesquels vous souhaitez générer des documents (appels de cotisation, factures, etc.).",
+      icon: <Clipboard className="h-12 w-12 text-green-500" />
+    },
+    {
+      title: "Choisissez votre modèle",
+      description: "Sélectionnez le type de document à générer depuis la bibliothèque de modèles disponibles.",
+      icon: <Filter className="h-12 w-12 text-purple-500" />
+    },
+    {
+      title: "Générez les documents",
+      description: "Un clic sur le bouton de génération crée automatiquement tous les PDF personnalisés pour les adhérents sélectionnés.",
+      icon: <FileCheck className="h-12 w-12 text-green-500" />
     },
     {
       title: "Envoyez par email",
-      description: "Envoyez directement les documents générés par email à vos adhérents en un seul clic.",
+      description: "Envoyez directement les documents générés par email à vos adhérents en un seul clic ou téléchargez-les en lot.",
       icon: <Mail className="h-12 w-12 text-purple-500" />
     }
   ];
@@ -57,6 +73,14 @@ export const TutorialGuide = () => {
     // Marquer le tutoriel comme terminé
     localStorage.setItem('cpme-tutorial-completed', 'true');
     setShowTutorial(false);
+    
+    toast.success('Tutoriel terminé !', { 
+      description: 'Vous pouvez le revoir à tout moment depuis les paramètres.' 
+    });
+  };
+  
+  const resetTutorial = () => {
+    localStorage.removeItem('cpme-tutorial-completed');
   };
 
   return (
