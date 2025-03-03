@@ -3,6 +3,7 @@ import { firebaseAuth } from '@/services/firebase/firebaseService';
 import { firestoreService } from '@/services/firebase/firestoreService';
 import { getDeviceId, getLocation } from './authUtils';
 import { User, UserRole } from './types';
+import { User as FirebaseUser } from 'firebase/auth';
 
 export const useAuthMethods = (
   setUser: React.Dispatch<React.SetStateAction<User | null>>,
@@ -12,7 +13,7 @@ export const useAuthMethods = (
   user: User | null
 ) => {
   // Login function
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<FirebaseUser | null> => {
     setIsLoading(true);
     try {
       // Connexion via Firebase Auth

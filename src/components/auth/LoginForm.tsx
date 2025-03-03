@@ -15,8 +15,10 @@ import { firestoreService } from '@/services/firebase/firestoreService';
 import { Timestamp } from 'firebase/firestore';
 import { Captcha } from './Captcha';
 import { rateLimitService } from '@/services/rateLimitService';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Shield, Lock } from 'lucide-react';
+import { LoginBlockedAlert } from './LoginBlockedAlert';
+import { AttemptsRemainingAlert } from './AttemptsRemainingAlert';
+import { ErrorAlert } from './ErrorAlert';
+import { useTimeFormat } from './hooks/useTimeFormat';
 
 export const LoginForm: React.FC = () => {
   const { login, isLoading } = useAuth();
@@ -27,6 +29,7 @@ export const LoginForm: React.FC = () => {
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const formattedTime = useTimeFormat(timeRemaining);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -36,23 +39,21 @@ export const LoginForm: React.FC = () => {
     },
   });
 
-  // Vérifier le statut de blocage au chargement
+  // Vérifier le statut de blocage et captcha au chargement
   useEffect(() => {
     const checkRateLimit = () => {
       const blocked = rateLimitService.isBlocked();
       setIsBlocked(blocked);
       
       if (blocked) {
-        const remaining = rateLimitService.getTimeRemaining();
-        setTimeRemaining(remaining);
+        setTimeRemaining(rateLimitService.getTimeRemaining());
       }
     };
     
     checkRateLimit();
     
-    // Afficher le captcha après 3 tentatives
-    const rateLimitData = JSON.parse(localStorage.getItem('auth-rate-limit') || '{"attempts":0}');
-    setShowCaptcha(rateLimitData.attempts >= 2);
+    // Vérifier si le captcha doit être affiché
+    setShowCaptcha(rateLimitService.shouldShowCaptcha());
     
     // Mettre à jour le compteur toutes les secondes
     const timer = setInterval(() => {
@@ -65,13 +66,6 @@ export const LoginForm: React.FC = () => {
     
     return () => clearInterval(timer);
   }, [isBlocked]);
-
-  // Formatter le temps restant
-  const formatTimeRemaining = () => {
-    const minutes = Math.floor(timeRemaining / 60);
-    const seconds = timeRemaining % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
 
   const onSubmit = async (data: LoginFormValues) => {
     setLoginError(null);
@@ -98,6 +92,9 @@ export const LoginForm: React.FC = () => {
         return;
       }
       
+      // Vérifier si le captcha doit être affiché après cette tentative
+      setShowCaptcha(rateLimitService.shouldShowCaptcha());
+      
       // Login avec Firebase Auth
       const loginResult = await login(data.email, data.password);
       
@@ -122,11 +119,8 @@ export const LoginForm: React.FC = () => {
       console.error('Login error:', error);
       setLoginError(error.message || "Erreur lors de la connexion. Vérifiez vos identifiants.");
       
-      // Activer le captcha après 2 tentatives échouées
-      const rateLimitData = JSON.parse(localStorage.getItem('auth-rate-limit') || '{"attempts":0}');
-      if (rateLimitData.attempts >= 2) {
-        setShowCaptcha(true);
-      }
+      // Le captcha est géré automatiquement par le service de limitation de requêtes
+      setShowCaptcha(rateLimitService.shouldShowCaptcha());
     }
   };
 
@@ -137,32 +131,12 @@ export const LoginForm: React.FC = () => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {loginError && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Erreur de connexion</AlertTitle>
-            <AlertDescription>{loginError}</AlertDescription>
-          </Alert>
-        )}
+        {loginError && <ErrorAlert error={loginError} />}
         
-        {isBlocked && (
-          <Alert variant="destructive">
-            <Lock className="h-4 w-4" />
-            <AlertTitle>Compte temporairement bloqué</AlertTitle>
-            <AlertDescription>
-              Trop de tentatives de connexion. Veuillez réessayer dans {formatTimeRemaining()}.
-            </AlertDescription>
-          </Alert>
-        )}
+        {isBlocked && <LoginBlockedAlert timeRemaining={formattedTime} />}
         
         {!isBlocked && attemptsLeft < 3 && (
-          <Alert>
-            <Shield className="h-4 w-4" />
-            <AlertTitle>Attention</AlertTitle>
-            <AlertDescription>
-              Il vous reste {attemptsLeft} tentative{attemptsLeft > 1 ? 's' : ''} avant le blocage temporaire du compte.
-            </AlertDescription>
-          </Alert>
+          <AttemptsRemainingAlert attemptsLeft={attemptsLeft} />
         )}
 
         <FormField
