@@ -2,18 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { 
-  CheckCircle, 
-  ArrowRight, 
-  Shield, 
-  Database, 
-  FileText, 
-  Mail, 
-  Users, 
-  Star, 
-  MessageCircle 
-} from 'lucide-react';
-
+import { CheckCircle, ArrowRight, Shield, Database, FileText, Mail, Users, Star, MessageCircle } from 'lucide-react';
 const Index = () => {
   const navigate = useNavigate();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
@@ -21,57 +10,56 @@ const Index = () => {
   // Pricing constants
   const DISCOUNT_PERCENTAGE = 20;
   const prices = {
-    standard: { monthly: 49, annual: 49 * 12 * (1 - DISCOUNT_PERCENTAGE / 100) },
-    pro: { monthly: 99, annual: 99 * 12 * (1 - DISCOUNT_PERCENTAGE / 100) },
-    enterprise: { monthly: 199, annual: 199 * 12 * (1 - DISCOUNT_PERCENTAGE / 100) }
+    standard: {
+      monthly: 49,
+      annual: 49 * 12 * (1 - DISCOUNT_PERCENTAGE / 100)
+    },
+    pro: {
+      monthly: 99,
+      annual: 99 * 12 * (1 - DISCOUNT_PERCENTAGE / 100)
+    },
+    enterprise: {
+      monthly: 199,
+      annual: 199 * 12 * (1 - DISCOUNT_PERCENTAGE / 100)
+    }
   };
-
-  const features = [
-    {
-      icon: <Database className="h-6 w-6 text-primary" />,
-      title: 'Importation de données',
-      description: 'Importez vos données depuis Excel ou CSV en quelques clics.'
-    },
-    {
-      icon: <FileText className="h-6 w-6 text-primary" />,
-      title: 'Génération de PDF',
-      description: 'Générez automatiquement des PDF à partir de vos données.'
-    },
-    {
-      icon: <Mail className="h-6 w-6 text-primary" />,
-      title: 'Envoi par email',
-      description: 'Envoyez directement les documents générés par email à vos adhérents.'
-    },
-    {
-      icon: <Shield className="h-6 w-6 text-primary" />,
-      title: 'Sécurité avancée',
-      description: 'Protection des données et conformité RGPD garanties.'
-    }
-  ];
-
-  const testimonials = [
-    {
-      name: "Marie-Claire Durand",
-      role: "Assistante Administrative, CPME 93",
-      content: "Avant CPME Tool, je passais des heures à copier-coller des données. Maintenant, je génère tous mes documents en quelques clics !",
-      rating: 5
-    },
-    {
-      name: "Valérie Martin",
-      role: "Présidente, CPME Seine-Saint-Denis",
-      content: "Une solution adaptée à nos besoins qui a considérablement amélioré notre productivité. Notre équipe gagne un temps précieux.",
-      rating: 5
-    },
-    {
-      name: "Philippe Dubois",
-      role: "Directeur, CPME Loire",
-      content: "L'interface est intuitive et la génération de documents fonctionne parfaitement. Le support client est également très réactif.",
-      rating: 4
-    }
-  ];
-
+  const features = [{
+    icon: <Database className="h-6 w-6 text-primary" />,
+    title: 'Importation de données',
+    description: 'Importez vos données depuis Excel ou CSV en quelques clics.'
+  }, {
+    icon: <FileText className="h-6 w-6 text-primary" />,
+    title: 'Génération de PDF',
+    description: 'Générez automatiquement des PDF à partir de vos données.'
+  }, {
+    icon: <Mail className="h-6 w-6 text-primary" />,
+    title: 'Envoi par email',
+    description: 'Envoyez directement les documents générés par email à vos adhérents.'
+  }, {
+    icon: <Shield className="h-6 w-6 text-primary" />,
+    title: 'Sécurité avancée',
+    description: 'Protection des données et conformité RGPD garanties.'
+  }];
+  const testimonials = [{
+    name: "Marie-Claire Durand",
+    role: "Assistante Administrative, CPME 93",
+    content: "Avant CPME Tool, je passais des heures à copier-coller des données. Maintenant, je génère tous mes documents en quelques clics !",
+    rating: 5
+  }, {
+    name: "Valérie Martin",
+    role: "Présidente, CPME Seine-Saint-Denis",
+    content: "Une solution adaptée à nos besoins qui a considérablement amélioré notre productivité. Notre équipe gagne un temps précieux.",
+    rating: 5
+  }, {
+    name: "Philippe Dubois",
+    role: "Directeur, CPME Loire",
+    content: "L'interface est intuitive et la génération de documents fonctionne parfaitement. Le support client est également très réactif.",
+    rating: 4
+  }];
   const containerVariants = {
-    hidden: { opacity: 0 },
+    hidden: {
+      opacity: 0
+    },
     visible: {
       opacity: 1,
       transition: {
@@ -79,9 +67,11 @@ const Index = () => {
       }
     }
   };
-
   const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
+    hidden: {
+      y: 20,
+      opacity: 0
+    },
     visible: {
       y: 0,
       opacity: 1,
@@ -95,11 +85,12 @@ const Index = () => {
 
   // Format price with euro symbol
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(price);
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(price);
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-slate-50">
+  return <div className="min-h-screen bg-gradient-to-b from-white to-slate-50">
       {/* Top Navigation */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -139,47 +130,48 @@ const Index = () => {
       <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 z-0"></div>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center"
-          >
-            <motion.h1 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              className="text-4xl md:text-5xl font-bold tracking-tight text-slate-900 mb-6"
-            >
+          <motion.div initial={{
+          opacity: 0,
+          y: 20
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} transition={{
+          duration: 0.5
+        }} className="text-center">
+            <motion.h1 initial={{
+            opacity: 0
+          }} animate={{
+            opacity: 1
+          }} transition={{
+            delay: 0.2,
+            duration: 0.6
+          }} className="text-4xl md:text-5xl font-bold tracking-tight text-slate-900 mb-6">
               <span className="text-cpme">CPME Tool</span> - Automatisez vos documents de facturation
             </motion.h1>
-            <motion.p 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="text-xl text-slate-600 max-w-3xl mx-auto"
-            >
+            <motion.p initial={{
+            opacity: 0
+          }} animate={{
+            opacity: 1
+          }} transition={{
+            delay: 0.4,
+            duration: 0.6
+          }} className="text-xl text-slate-600 max-w-3xl mx-auto">
               Transformez vos données Excel en documents PDF personnalisés et automatisez vos processus de facturation en quelques clics.
             </motion.p>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6, duration: 0.6 }}
-              className="mt-10 flex flex-wrap justify-center gap-4"
-            >
-              <Button 
-                size="lg" 
-                className="shadow-lg group"
-                onClick={() => navigate('/register')}
-              >
+            <motion.div initial={{
+            opacity: 0
+          }} animate={{
+            opacity: 1
+          }} transition={{
+            delay: 0.6,
+            duration: 0.6
+          }} className="mt-10 flex flex-wrap justify-center gap-4">
+              <Button size="lg" className="shadow-lg group" onClick={() => navigate('/register')}>
                 Commencer maintenant 
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={() => navigate('/login')}
-              >
+              <Button variant="outline" size="lg" onClick={() => navigate('/login')}>
                 Se connecter
               </Button>
             </motion.div>
@@ -197,26 +189,17 @@ const Index = () => {
             </p>
           </div>
 
-          <motion.div 
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.1 }}
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
-          >
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                className="bg-white p-8 rounded-lg shadow-soft border border-slate-100 transition-all hover:shadow-premium hover:border-slate-200"
-              >
+          <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{
+          once: true,
+          amount: 0.1
+        }} className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, index) => <motion.div key={index} variants={itemVariants} className="bg-white p-8 rounded-lg shadow-soft border border-slate-100 transition-all hover:shadow-premium hover:border-slate-200">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-6">
                   {feature.icon}
                 </div>
                 <h3 className="text-xl font-medium text-slate-900 mb-3">{feature.title}</h3>
                 <p className="text-slate-600">{feature.description}</p>
-              </motion.div>
-            ))}
+              </motion.div>)}
           </motion.div>
         </div>
       </section>
@@ -231,37 +214,25 @@ const Index = () => {
             </p>
           </div>
 
-          <motion.div 
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.1 }}
-            className="relative"
-          >
+          <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{
+          once: true,
+          amount: 0.1
+        }} className="relative">
             <div className="absolute top-24 left-0 right-0 h-0.5 bg-slate-200 hidden md:block"></div>
             <div className="grid md:grid-cols-3 gap-8">
-              {[
-                {
-                  title: 'Importez vos données',
-                  description: 'Téléchargez vos fichiers Excel ou CSV contenant les informations de vos adhérents.',
-                  step: '1'
-                },
-                {
-                  title: 'Sélectionnez un modèle',
-                  description: 'Choisissez le modèle de document que vous souhaitez générer (appel de cotisation, facture, etc.).',
-                  step: '2'
-                },
-                {
-                  title: 'Générez et envoyez',
-                  description: 'Générez automatiquement vos documents et envoyez-les par email en un clic.',
-                  step: '3'
-                }
-              ].map((step, index) => (
-                <motion.div
-                  key={index}
-                  variants={itemVariants}
-                  className="relative"
-                >
+              {[{
+              title: 'Importez vos données',
+              description: 'Téléchargez vos fichiers Excel ou CSV contenant les informations de vos adhérents.',
+              step: '1'
+            }, {
+              title: 'Sélectionnez un modèle',
+              description: 'Choisissez le modèle de document que vous souhaitez générer (appel de cotisation, facture, etc.).',
+              step: '2'
+            }, {
+              title: 'Générez et envoyez',
+              description: 'Générez automatiquement vos documents et envoyez-les par email en un clic.',
+              step: '3'
+            }].map((step, index) => <motion.div key={index} variants={itemVariants} className="relative">
                   <div className="bg-white p-8 rounded-lg shadow-soft border border-slate-100 relative z-10">
                     <div className="w-10 h-10 rounded-full bg-cpme flex items-center justify-center text-white font-medium mb-6 absolute -top-5 left-8 shadow-lg">
                       {step.step}
@@ -271,8 +242,7 @@ const Index = () => {
                       <p className="text-slate-600">{step.description}</p>
                     </div>
                   </div>
-                </motion.div>
-              ))}
+                </motion.div>)}
             </div>
           </motion.div>
         </div>
@@ -289,22 +259,22 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
-                className="bg-white p-8 rounded-lg shadow-soft border border-slate-100"
-              >
+            {testimonials.map((testimonial, index) => <motion.div key={index} initial={{
+            opacity: 0,
+            y: 20
+          }} whileInView={{
+            opacity: 1,
+            y: 0
+          }} viewport={{
+            once: true
+          }} transition={{
+            delay: index * 0.1,
+            duration: 0.5
+          }} className="bg-white p-8 rounded-lg shadow-soft border border-slate-100">
                 <div className="flex mb-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star 
-                      key={i} 
-                      className={`h-5 w-5 ${i < testimonial.rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'}`} 
-                    />
-                  ))}
+                  {Array.from({
+                length: 5
+              }).map((_, i) => <Star key={i} className={`h-5 w-5 ${i < testimonial.rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'}`} />)}
                 </div>
                 <p className="text-slate-600 mb-6 italic">"{testimonial.content}"</p>
                 <div className="flex items-center">
@@ -316,8 +286,7 @@ const Index = () => {
                     <p className="text-sm text-slate-500">{testimonial.role}</p>
                   </div>
                 </div>
-              </motion.div>
-            ))}
+              </motion.div>)}
           </div>
         </div>
       </section>
@@ -333,20 +302,10 @@ const Index = () => {
             
             <div className="flex justify-center mt-8">
               <div className="bg-slate-100 p-1 rounded-full inline-flex">
-                <button
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    billingCycle === 'monthly' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'
-                  }`}
-                  onClick={() => setBillingCycle('monthly')}
-                >
+                <button className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${billingCycle === 'monthly' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`} onClick={() => setBillingCycle('monthly')}>
                   Mensuel
                 </button>
-                <button
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    billingCycle === 'annual' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'
-                  }`}
-                  onClick={() => setBillingCycle('annual')}
-                >
+                <button className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${billingCycle === 'annual' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`} onClick={() => setBillingCycle('annual')}>
                   Annuel <span className="text-xs text-green-600 font-bold">-20%</span>
                 </button>
               </div>
@@ -354,55 +313,37 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                title: "Licence Standard",
-                price: billingCycle === 'monthly' ? prices.standard.monthly : prices.standard.annual / 12,
-                period: billingCycle === 'monthly' ? "par mois" : "par mois, facturé annuellement",
-                features: [
-                  "Jusqu'à 3 utilisateurs",
-                  "500 documents par mois",
-                  "Modèles prédéfinis",
-                  "Support par email"
-                ]
-              },
-              {
-                title: "Licence Pro",
-                price: billingCycle === 'monthly' ? prices.pro.monthly : prices.pro.annual / 12,
-                period: billingCycle === 'monthly' ? "par mois" : "par mois, facturé annuellement",
-                popular: true,
-                features: [
-                  "Jusqu'à 10 utilisateurs",
-                  "Documents illimités",
-                  "Modèles personnalisables",
-                  "Support prioritaire"
-                ]
-              },
-              {
-                title: "Licence Enterprise",
-                price: billingCycle === 'monthly' ? prices.enterprise.monthly : prices.enterprise.annual / 12,
-                period: billingCycle === 'monthly' ? "par mois" : "par mois, facturé annuellement",
-                features: [
-                  "Utilisateurs illimités",
-                  "Documents illimités",
-                  "Modèles 100% personnalisés",
-                  "Support dédié 24/7"
-                ]
-              }
-            ].map((plan, index) => (
-              <motion.div 
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
-                className={`bg-white rounded-lg shadow-soft border ${plan.popular ? 'border-primary ring-2 ring-primary/20' : 'border-slate-100'} overflow-hidden`}
-              >
-                {plan.popular && (
-                  <div className="bg-primary text-white text-center py-1.5 text-sm font-medium">
+            {[{
+            title: "Licence Standard",
+            price: billingCycle === 'monthly' ? prices.standard.monthly : prices.standard.annual / 12,
+            period: billingCycle === 'monthly' ? "par mois" : "par mois, facturé annuellement",
+            features: ["Jusqu'à 3 utilisateurs", "500 documents par mois", "Modèles prédéfinis", "Support par email"]
+          }, {
+            title: "Licence Pro",
+            price: billingCycle === 'monthly' ? prices.pro.monthly : prices.pro.annual / 12,
+            period: billingCycle === 'monthly' ? "par mois" : "par mois, facturé annuellement",
+            popular: true,
+            features: ["Jusqu'à 10 utilisateurs", "Documents illimités", "Modèles personnalisables", "Support prioritaire"]
+          }, {
+            title: "Licence Enterprise",
+            price: billingCycle === 'monthly' ? prices.enterprise.monthly : prices.enterprise.annual / 12,
+            period: billingCycle === 'monthly' ? "par mois" : "par mois, facturé annuellement",
+            features: ["Utilisateurs illimités", "Documents illimités", "Modèles 100% personnalisés", "Support dédié 24/7"]
+          }].map((plan, index) => <motion.div key={index} initial={{
+            opacity: 0,
+            y: 20
+          }} whileInView={{
+            opacity: 1,
+            y: 0
+          }} viewport={{
+            once: true
+          }} transition={{
+            delay: index * 0.1,
+            duration: 0.5
+          }} className={`bg-white rounded-lg shadow-soft border ${plan.popular ? 'border-primary ring-2 ring-primary/20' : 'border-slate-100'} overflow-hidden`}>
+                {plan.popular && <div className="bg-primary text-white text-center py-1.5 text-sm font-medium">
                     Recommandé
-                  </div>
-                )}
+                  </div>}
                 <div className="p-8">
                   <h3 className="text-xl font-bold text-slate-900">{plan.title}</h3>
                   <div className="mt-4 flex items-baseline">
@@ -410,26 +351,21 @@ const Index = () => {
                     <span className="ml-1 text-slate-500">{plan.period}</span>
                   </div>
                   <ul className="mt-6 space-y-4">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-center">
+                    {plan.features.map((feature, i) => <li key={i} className="flex items-center">
                         <CheckCircle className="h-5 w-5 text-cpme mr-2 flex-shrink-0" />
                         <span className="text-slate-600">{feature}</span>
-                      </li>
-                    ))}
+                      </li>)}
                   </ul>
                   <Button className="w-full mt-8" variant={plan.popular ? "default" : "outline"}>
                     Sélectionner
                   </Button>
                 </div>
-              </motion.div>
-            ))}
+              </motion.div>)}
           </div>
           
-          {billingCycle === 'annual' && (
-            <div className="text-center mt-8 text-sm text-slate-500">
+          {billingCycle === 'annual' && <div className="text-center mt-8 text-sm text-slate-500">
               * La facturation annuelle vous permet d'économiser 20% par rapport au tarif mensuel.
-            </div>
-          )}
+            </div>}
         </div>
       </section>
 
@@ -441,36 +377,22 @@ const Index = () => {
             Rejoignez les CPME qui ont déjà adopté notre solution pour optimiser leurs processus administratifs.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Button 
-              size="lg" 
-              variant="secondary"
-              className="bg-white text-cpme-dark hover:bg-white/90 shadow-lg"
-              onClick={() => navigate('/register')}
-            >
+            <Button size="lg" variant="secondary" className="bg-white text-cpme-dark hover:bg-white/90 shadow-lg" onClick={() => navigate('/register')}>
               Commencer gratuitement
             </Button>
-            <Button 
-              size="lg"
-              variant="outline" 
-              className="border-white text-white hover:bg-white/10"
-              onClick={() => navigate('/contact')}
-            >
+            <Button size="lg" variant="outline" onClick={() => navigate('/contact')} className="border-white bg-slate-50 text-black">
               Nous contacter
             </Button>
           </div>
 
           <div className="mt-16 flex flex-col md:flex-row items-center justify-center gap-8">
-            {['Sécurité garantie', 'Support réactif', 'Mise en route rapide'].map((item, i) => (
-              <div key={i} className="flex items-center">
+            {['Sécurité garantie', 'Support réactif', 'Mise en route rapide'].map((item, i) => <div key={i} className="flex items-center">
                 <CheckCircle className="h-5 w-5 mr-2 text-white" />
                 <span>{item}</span>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
