@@ -30,11 +30,17 @@ const TemplateList: React.FC<TemplateListProps> = ({
   const [activeTab, setActiveTab] = useState<'all' | 'pdf' | 'word'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   
+  // Helper function to check if a template is of type Template
+  const isTemplate = (template: any): template is Template => {
+    return 'documentType' in template;
+  };
+  
   const filteredTemplates = templates.filter(template => {
-    if (activeTab === 'pdf' && template.documentType !== 'pdf') {
+    if (activeTab === 'pdf' && isTemplate(template) && template.documentType !== 'pdf') {
       return false;
     }
-    if (activeTab === 'word' && !['doc', 'docx'].includes(template.documentType || '')) {
+    if (activeTab === 'word' && isTemplate(template) && 
+        !['doc', 'docx'].includes(template.documentType || '')) {
       return false;
     }
     
@@ -44,6 +50,14 @@ const TemplateList: React.FC<TemplateListProps> = ({
     
     return true;
   });
+  
+  // Count PDF templates
+  const pdfCount = templates.filter(t => isTemplate(t) && t.documentType === 'pdf').length;
+  
+  // Count Word templates
+  const wordCount = templates.filter(t => 
+    isTemplate(t) && ['doc', 'docx'].includes(t.documentType || '')
+  ).length;
   
   return (
     <div className="space-y-4">
@@ -55,15 +69,11 @@ const TemplateList: React.FC<TemplateListProps> = ({
             </TabsTrigger>
             <TabsTrigger value="pdf" className="flex items-center">
               <FileText className="h-4 w-4 mr-1" /> PDF
-              <Badge variant="outline" className="ml-2">
-                {templates.filter(t => t.documentType === 'pdf').length}
-              </Badge>
+              <Badge variant="outline" className="ml-2">{pdfCount}</Badge>
             </TabsTrigger>
             <TabsTrigger value="word" className="flex items-center">
               <File className="h-4 w-4 mr-1" /> Word
-              <Badge variant="outline" className="ml-2">
-                {templates.filter(t => ['doc', 'docx'].includes(t.documentType || '')).length}
-              </Badge>
+              <Badge variant="outline" className="ml-2">{wordCount}</Badge>
             </TabsTrigger>
           </TabsList>
         </Tabs>

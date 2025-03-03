@@ -10,7 +10,7 @@ import { SpreadsheetTemplate } from '@/hooks/useSpreadsheetTemplates';
 type TemplateType = Template | SpreadsheetTemplate;
 
 interface TemplateCardProps {
-  template: Template;
+  template: TemplateType;
   canSaveTemplate: boolean;
   openDeleteDialog: (template: Template) => void;
   openPreviewDialog: (template: TemplateType) => void;
@@ -24,83 +24,120 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
   openPreviewDialog,
   openSaveDialog,
 }) => {
-  // Détermine l'icône du document en fonction de son type
-  const DocumentIcon = template.documentType === 'pdf' ? FileText : File;
+  // Helper function to check if template is of type Template
+  const isTemplate = (template: TemplateType): template is Template => {
+    return 'documentType' in template;
+  };
+
+  // Determine document icon based on its type
+  const DocumentIcon = isTemplate(template) && template.documentType === 'pdf' ? FileText : File;
+  
+  // Only call functions expecting Template type if we have a Template
+  const handleDelete = () => {
+    if (isTemplate(template)) {
+      openDeleteDialog(template);
+    }
+  };
+  
+  const handleSave = () => {
+    if (isTemplate(template)) {
+      openSaveDialog(template);
+    }
+  };
+
+  // Safely get values with type guards
+  const isPermanent = isTemplate(template) && template.permanent;
+  const documentType = isTemplate(template) ? template.documentType : 'pdf';
+  const type = isTemplate(template) ? template.type : (template.type || 'autre');
+  const savedBy = isTemplate(template) ? template.savedBy : undefined;
+  const fileUrl = template.fileUrl || '';
+  
+  // Get fields with fallbacks
+  const fields = isTemplate(template) 
+    ? template.fields 
+    : (template.mappingFields || []);
+    
+  // Get date in a consistent format
+  const date = isTemplate(template) 
+    ? template.date 
+    : (template.createdAt ? template.createdAt.toISOString() : new Date().toISOString());
   
   return (
-    <Card className={`overflow-hidden ${template.permanent ? 'border-primary/40' : ''}`}>
-      <CardHeader className={`${template.permanent ? 'bg-primary/5' : 'bg-slate-50'} pb-4`}>
+    <Card className={`overflow-hidden ${isPermanent ? 'border-primary/40' : ''}`}>
+      <CardHeader className={`${isPermanent ? 'bg-primary/5' : 'bg-slate-50'} pb-4`}>
         <div className="flex justify-between items-start">
           <CardTitle className="flex items-center">
-            <DocumentIcon className={`h-5 w-5 mr-2 ${template.documentType === 'pdf' ? 'text-primary' : 'text-blue-600'}`} />
+            <DocumentIcon className={`h-5 w-5 mr-2 ${documentType === 'pdf' ? 'text-primary' : 'text-blue-600'}`} />
             {template.name}
           </CardTitle>
-          {template.permanent && (
+          {isPermanent && (
             <span className="bg-primary/20 text-primary text-xs px-2 py-1 rounded-full">
               Permanent
             </span>
           )}
         </div>
         <CardDescription className="flex items-center gap-2">
-          {template.type === 'facture' ? 'Modèle de facture' : 
-           template.type === 'appel' ? 'Modèle d\'appel de cotisation' :
-           template.type === 'rappel' ? 'Modèle de rappel' : 'Autre modèle'}
-          <span className={`px-2 py-0.5 rounded text-xs ${
-            template.documentType === 'pdf' ? 'bg-red-100 text-red-700' :
-            'bg-blue-100 text-blue-700'
-          }`}>
-            {template.documentType === 'pdf' ? 'PDF' : 
-             template.documentType === 'doc' ? 'DOC' : 'DOCX'}
-          </span>
+          {type === 'facture' ? 'Modèle de facture' : 
+           type === 'appel' ? 'Modèle d\'appel de cotisation' :
+           type === 'rappel' ? 'Modèle de rappel' : 'Autre modèle'}
+          {isTemplate(template) && (
+            <span className={`px-2 py-0.5 rounded text-xs ${
+              documentType === 'pdf' ? 'bg-red-100 text-red-700' :
+              'bg-blue-100 text-blue-700'
+            }`}>
+              {documentType === 'pdf' ? 'PDF' : 
+              documentType === 'doc' ? 'DOC' : 'DOCX'}
+            </span>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-4">
         <div className="text-sm text-slate-500 mb-3">
-          Champs disponibles : {template.fields.length}
+          Champs disponibles : {fields.length}
         </div>
         <div className="flex flex-wrap gap-2">
-          {template.fields.slice(0, 3).map((field, idx) => (
+          {fields.slice(0, 3).map((field, idx) => (
             <div key={idx} className="bg-slate-100 text-slate-700 text-xs px-2 py-1 rounded">
               {field}
             </div>
           ))}
-          {template.fields.length > 3 && (
+          {fields.length > 3 && (
             <div className="bg-slate-100 text-slate-700 text-xs px-2 py-1 rounded">
-              +{template.fields.length - 3} autres
+              +{fields.length - 3} autres
             </div>
           )}
         </div>
       </CardContent>
       <CardFooter className="flex justify-between border-t bg-slate-50 py-3">
         <div className="text-xs text-slate-500">
-          {template.savedBy ? `Par ${template.savedBy}` : 'Ajouté le'} {new Date(template.date).toLocaleDateString('fr-FR')}
+          {savedBy ? `Par ${savedBy}` : 'Ajouté le'} {new Date(date).toLocaleDateString('fr-FR')}
         </div>
         <div className="flex space-x-2">
           <Button variant="ghost" size="sm" onClick={() => openPreviewDialog(template)}>
             <Eye className="h-4 w-4" />
           </Button>
-          {template.fileUrl && (
+          {fileUrl && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => window.open(template.fileUrl, '_blank')}
+              onClick={() => window.open(fileUrl, '_blank')}
               title="Télécharger"
             >
               <Download className="h-4 w-4 text-slate-600" />
             </Button>
           )}
-          {!template.permanent && canSaveTemplate && (
-            <Button variant="ghost" size="sm" onClick={() => openSaveDialog(template)}>
+          {isTemplate(template) && !isPermanent && canSaveTemplate && (
+            <Button variant="ghost" size="sm" onClick={handleSave}>
               <Check className="h-4 w-4 text-green-600" />
             </Button>
           )}
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => openDeleteDialog(template)}
-            disabled={template.permanent && !(template.savedBy === 'system')}
+            onClick={handleDelete}
+            disabled={isPermanent && !(savedBy === 'system')}
           >
-            <Trash2 className={`h-4 w-4 ${template.permanent ? 'text-slate-400' : 'text-destructive'}`} />
+            <Trash2 className={`h-4 w-4 ${isPermanent ? 'text-slate-400' : 'text-destructive'}`} />
           </Button>
         </div>
       </CardFooter>
