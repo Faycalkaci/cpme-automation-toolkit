@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ type Template = {
   date: string;
   fields: string[];
   fileUrl: string;
+  file?: File;
 };
 
 const TemplateManager: React.FC = () => {
@@ -52,21 +53,55 @@ const TemplateManager: React.FC = () => {
   
   const [newTemplateName, setNewTemplateName] = useState('');
   const [newTemplateType, setNewTemplateType] = useState<'facture' | 'appel' | 'rappel' | 'autre'>('autre');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      if (file.type === 'application/pdf') {
+        setSelectedFile(file);
+        toast.success('Fichier sélectionné', {
+          description: `"${file.name}" a été sélectionné.`
+        });
+      } else {
+        toast.error('Type de fichier invalide', {
+          description: 'Veuillez sélectionner un fichier PDF.'
+        });
+      }
+    }
+  };
   
   const handleUpload = () => {
+    if (!selectedFile) {
+      toast.error('Fichier manquant', {
+        description: 'Veuillez sélectionner un fichier PDF.'
+      });
+      return;
+    }
+    
+    if (!newTemplateName) {
+      toast.error('Nom manquant', {
+        description: 'Veuillez donner un nom à votre modèle.'
+      });
+      return;
+    }
+    
     const newTemplate: Template = {
       id: Date.now().toString(),
       name: newTemplateName,
       type: newTemplateType,
       date: new Date().toISOString().split('T')[0],
       fields: ['Entreprise', 'Email'], // Default fields, would be extracted from PDF
-      fileUrl: `/templates/${newTemplateName.toLowerCase().replace(/\s+/g, '-')}.pdf`
+      fileUrl: URL.createObjectURL(selectedFile),
+      file: selectedFile
     };
     
     setTemplates([...templates, newTemplate]);
     setShowUploadDialog(false);
     setNewTemplateName('');
     setNewTemplateType('autre');
+    setSelectedFile(null);
     
     toast.success('Modèle ajouté avec succès', {
       description: `Le modèle "${newTemplateName}" a été ajouté à votre bibliothèque.`
@@ -93,6 +128,36 @@ const TemplateManager: React.FC = () => {
   const openPreviewDialog = (template: Template) => {
     setTemplateToPreview(template);
     setShowPreviewDialog(true);
+  };
+  
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      if (file.type === 'application/pdf') {
+        setSelectedFile(file);
+        toast.success('Fichier sélectionné', {
+          description: `"${file.name}" a été sélectionné.`
+        });
+      } else {
+        toast.error('Type de fichier invalide', {
+          description: 'Veuillez sélectionner un fichier PDF.'
+        });
+      }
+    }
+  };
+  
+  const browseFiles = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
   
   return (
@@ -217,30 +282,72 @@ const TemplateManager: React.FC = () => {
               <label htmlFor="template-file" className="text-sm font-medium">
                 Fichier PDF
               </label>
-              <div className="border-2 border-dashed border-slate-200 rounded-lg p-4">
+              <div 
+                className={`border-2 border-dashed rounded-lg p-4 transition-colors ${
+                  selectedFile ? 'border-green-500 bg-green-50' : 'border-slate-200 hover:border-primary/50'
+                }`}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
                 <div className="text-center">
-                  <FileUp className="h-8 w-8 mx-auto text-slate-400" />
-                  <p className="mt-2 text-sm text-slate-600">
-                    Glissez-déposez votre fichier PDF ici ou cliquez pour parcourir
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                  >
-                    Parcourir
-                  </Button>
+                  {selectedFile ? (
+                    <>
+                      <Check className="h-8 w-8 mx-auto text-green-500" />
+                      <p className="mt-2 text-sm font-medium text-green-700">
+                        {selectedFile.name}
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">
+                        {Math.round(selectedFile.size / 1024)} Ko
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => setSelectedFile(null)}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Supprimer
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <FileUp className="h-8 w-8 mx-auto text-slate-400" />
+                      <p className="mt-2 text-sm text-slate-600">
+                        Glissez-déposez votre fichier PDF ici ou cliquez pour parcourir
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={browseFiles}
+                      >
+                        Parcourir
+                      </Button>
+                      <input 
+                        ref={fileInputRef}
+                        id="template-file" 
+                        type="file" 
+                        accept=".pdf" 
+                        className="hidden"
+                        onChange={handleFileSelect}
+                      />
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
+            <Button variant="outline" onClick={() => {
+              setShowUploadDialog(false);
+              setSelectedFile(null);
+            }}>
               Annuler
             </Button>
-            <Button onClick={handleUpload} disabled={!newTemplateName}>
+            <Button onClick={handleUpload} disabled={!newTemplateName || !selectedFile}>
               Ajouter le modèle
             </Button>
           </DialogFooter>
@@ -288,14 +395,22 @@ const TemplateManager: React.FC = () => {
           
           {templateToPreview && (
             <div className="py-4">
-              <div className="aspect-[3/4] bg-slate-100 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <FileText className="h-12 w-12 text-slate-400 mx-auto" />
-                  <p className="mt-4 text-slate-600">
-                    Aperçu non disponible en mode démo
-                  </p>
+              {templateToPreview.file ? (
+                <iframe 
+                  src={templateToPreview.fileUrl} 
+                  className="w-full h-[70vh] border rounded"
+                  title={`Aperçu de ${templateToPreview.name}`}
+                />
+              ) : (
+                <div className="aspect-[3/4] bg-slate-100 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <FileText className="h-12 w-12 text-slate-400 mx-auto" />
+                    <p className="mt-4 text-slate-600">
+                      Aperçu non disponible en mode démo
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
               
               <div className="mt-4">
                 <h3 className="font-medium">Champs à mapper :</h3>
