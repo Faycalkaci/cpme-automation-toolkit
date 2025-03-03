@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -6,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search, Download, FileText, Mail, X, CheckSquare, Square } from 'lucide-react';
 import { toast } from 'sonner';
+import { jsPDF } from 'jspdf';
 
 interface DataTableProps {
   data: any[];
@@ -25,7 +25,6 @@ const DataTable: React.FC<DataTableProps> = ({
   const [selectedRows, setSelectedRows] = useState<{[key: number]: boolean}>({});
   const [allSelected, setAllSelected] = useState(false);
   
-  // Update filtered data when data or search term changes
   useEffect(() => {
     if (searchTerm.trim() === '') {
       setFilteredData(data);
@@ -43,12 +42,10 @@ const DataTable: React.FC<DataTableProps> = ({
     }
   }, [data, searchTerm]);
   
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
   
-  // Toggle row selection
   const toggleRowSelection = (index: number) => {
     setSelectedRows(prev => ({
       ...prev,
@@ -56,7 +53,6 @@ const DataTable: React.FC<DataTableProps> = ({
     }));
   };
   
-  // Toggle select all rows
   const toggleSelectAll = () => {
     if (allSelected) {
       setSelectedRows({});
@@ -70,15 +66,12 @@ const DataTable: React.FC<DataTableProps> = ({
     setAllSelected(!allSelected);
   };
   
-  // Count selected rows
   const selectedCount = Object.values(selectedRows).filter(Boolean).length;
   
-  // Get selected rows data
   const getSelectedRowsData = () => {
     return filteredData.filter((_, index) => selectedRows[index]);
   };
   
-  // Handle generate PDF button click
   const handleGeneratePdf = () => {
     const selectedData = getSelectedRowsData();
     if (selectedData.length === 0) {
@@ -87,10 +80,76 @@ const DataTable: React.FC<DataTableProps> = ({
       });
       return;
     }
+    
     onGeneratePdf(selectedData);
+    
+    generateAndDownloadPdf(selectedData);
   };
   
-  // Handle send email button click
+  const generateAndDownloadPdf = (data: any[]) => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      doc.setFontSize(18);
+      doc.text('Données exportées', pageWidth / 2, 15, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 22, { align: 'center' });
+      
+      const maxColumnWidth = 25;
+      let columnWidths: number[] = [];
+      let startX = 10;
+      const startY = 30;
+      const rowHeight = 10;
+      
+      headers.forEach((header, index) => {
+        const width = Math.min(header.length * 2 + 6, maxColumnWidth);
+        columnWidths.push(width);
+        
+        doc.rect(startX, startY, width, rowHeight, 'FD');
+        doc.text(header, startX + 2, startY + 6);
+        
+        startX += width;
+      });
+      
+      data.forEach((row, rowIndex) => {
+        const y = startY + (rowIndex + 1) * rowHeight;
+        
+        if (y + rowHeight > doc.internal.pageSize.getHeight() - 10) {
+          doc.addPage();
+          return;
+        }
+        
+        let x = 10;
+        
+        headers.forEach((header, colIndex) => {
+          const width = columnWidths[colIndex];
+          const value = String(row[header] || '');
+          
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(x, y, width, rowHeight);
+          
+          const truncatedValue = value.length > width / 2 ? value.substring(0, Math.floor(width / 2)) + '...' : value;
+          doc.text(truncatedValue, x + 2, y + 6);
+          
+          x += width;
+        });
+      });
+      
+      doc.save('donnees_exportees.pdf');
+      
+      toast.success("PDF généré et téléchargé", { 
+        description: `${data.length} lignes exportées au format PDF.` 
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error("Erreur lors de la génération du PDF", { 
+        description: "Une erreur est survenue pendant la génération du PDF." 
+      });
+    }
+  };
+  
   const handleSendEmail = () => {
     const selectedData = getSelectedRowsData();
     if (selectedData.length === 0) {
@@ -99,10 +158,40 @@ const DataTable: React.FC<DataTableProps> = ({
       });
       return;
     }
+    
+    const hasEmailColumns = selectedData.some(row => 
+      (row['E MAIL 1'] && row['E MAIL 1'].includes('@')) || 
+      (row['E Mail 2'] && row['E Mail 2'].includes('@'))
+    );
+    
+    if (!hasEmailColumns) {
+      toast.error("Adresses email manquantes", { 
+        description: "Les colonnes 'E MAIL 1' ou 'E Mail 2' sont vides ou ne contiennent pas d'adresses email valides." 
+      });
+      return;
+    }
+    
     onSendEmail(selectedData);
+    
+    const emailAddresses = selectedData.reduce((emails: string[], row) => {
+      if (row['E MAIL 1'] && row['E MAIL 1'].includes('@')) {
+        emails.push(row['E MAIL 1']);
+      }
+      if (row['E Mail 2'] && row['E Mail 2'].includes('@')) {
+        emails.push(row['E Mail 2']);
+      }
+      return emails;
+    }, []);
+    
+    if (emailAddresses.length > 0) {
+      toast.info(`Adresses email détectées (${emailAddresses.length})`, {
+        description: emailAddresses.length > 3 
+          ? `${emailAddresses.slice(0, 3).join(', ')} et ${emailAddresses.length - 3} autres adresses`
+          : emailAddresses.join(', ')
+      });
+    }
   };
   
-  // Handle export to CSV
   const handleExportCsv = () => {
     const selectedData = getSelectedRowsData();
     if (selectedData.length === 0) {
@@ -112,13 +201,11 @@ const DataTable: React.FC<DataTableProps> = ({
       return;
     }
     
-    // Simple CSV export
     const csvContent = [
       headers.join(','),
       ...selectedData.map(row => 
         headers.map(header => {
           const value = row[header] || '';
-          // Escape commas and quotes
           return `"${String(value).replace(/"/g, '""')}"`; 
         }).join(',')
       )
@@ -170,7 +257,6 @@ const DataTable: React.FC<DataTableProps> = ({
             {allSelected ? 'Désélectionner tout' : 'Sélectionner tout'}
           </Button>
           
-          {/* Removed the dropdown menu and added separate buttons */}
           <Button 
             onClick={handleGeneratePdf}
             disabled={selectedCount === 0}

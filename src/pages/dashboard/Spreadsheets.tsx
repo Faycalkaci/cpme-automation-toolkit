@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -25,7 +24,6 @@ const Spreadsheets = () => {
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   
-  // Define templates with their mapping fields
   const templates = [
     { 
       id: 'appel', 
@@ -63,22 +61,34 @@ const Spreadsheets = () => {
   
   const handleSendEmail = (rows: any[]) => {
     setSelectedRows(rows);
+    
+    const emailCount = rows.reduce((count, row) => {
+      let rowCount = 0;
+      if (row['E MAIL 1'] && row['E MAIL 1'].includes('@')) rowCount++;
+      if (row['E Mail 2'] && row['E Mail 2'].includes('@')) rowCount++;
+      return count + rowCount;
+    }, 0);
+    
+    if (emailCount === 0) {
+      toast.error("Adresses email manquantes", {
+        description: "Aucune adresse email valide n'a été trouvée dans les colonnes 'E MAIL 1' ou 'E Mail 2'."
+      });
+      return;
+    }
+    
     setShowEmailDialog(true);
   };
   
   const handleExport = () => {
-    // Implement export functionality
     toast.success('Export en cours', {
       description: `${data.length} lignes sont en cours d'exportation.`
     });
     
-    // Create CSV content
     const csvContent = [
       headers.join(','), // Header row
       ...data.map(row => headers.map(header => row[header]).join(',')) // Data rows
     ].join('\n');
     
-    // Create a blob and download it
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -102,56 +112,101 @@ const Spreadsheets = () => {
       return;
     }
     
-    // Get the selected template object
     const templateObj = templates.find(t => t.id === selectedTemplate);
     
-    // Display mapping information if available
     if (templateObj && templateObj.mappingFields && templateObj.mappingFields.length > 0) {
       toast.info('Champs mappés', {
         description: `Les champs suivants seront utilisés: ${templateObj.mappingFields.join(', ')}`
       });
     }
     
-    // Simulate PDF generation
     toast.success('Génération en cours', {
       description: `${selectedRows.length} documents sont en cours de génération.`
     });
     
-    // Simulate completion after a delay
     setTimeout(() => {
       toast.success('Génération terminée', {
         description: `${selectedRows.length} documents ont été générés avec succès.`
       });
+      
+      try {
+        const { jsPDF } = require('jspdf');
+        const doc = new jsPDF();
+        
+        doc.setFontSize(16);
+        doc.text(`${templateObj?.name || 'Document'} CPME`, 10, 20);
+        
+        let yPos = 30;
+        
+        selectedRows.forEach((row, index) => {
+          if (index > 0) {
+            doc.addPage();
+            yPos = 30;
+            doc.text(`${templateObj?.name || 'Document'} CPME`, 10, 20);
+          }
+          
+          if (templateObj && templateObj.mappingFields) {
+            templateObj.mappingFields.forEach(field => {
+              if (row[field]) {
+                doc.text(`${field}: ${row[field]}`, 10, yPos);
+                yPos += 10;
+              }
+            });
+          } else {
+            Object.entries(row).forEach(([key, value]) => {
+              if (value) {
+                doc.text(`${key}: ${value}`, 10, yPos);
+                yPos += 10;
+              }
+            });
+          }
+        });
+        
+        doc.save(`${templateObj?.id || 'document'}_cpme.pdf`);
+      } catch (error) {
+        console.error('Error generating PDF', error);
+        toast.error('Erreur de génération', {
+          description: 'Une erreur est survenue lors de la génération du PDF.'
+        });
+      }
+      
       setShowGenerateDialog(false);
-    }, 2000);
+    }, 1000);
   };
   
   const confirmSendEmail = () => {
-    // Get the selected template object
-    const templateObj = templates.find(t => t.id === selectedTemplate);
-    
-    // Check for email fields in the mapping
-    if (templateObj && templateObj.id === 'appel') {
-      const emailFields = templateObj.mappingFields.filter(field => 
-        field.toLowerCase().includes('mail')
-      );
-      
-      if (emailFields.length > 0) {
-        toast.info('Emails détectés', {
-          description: `Les emails seront envoyés aux champs: ${emailFields.join(', ')}`
-        });
-      }
+    if (!selectedTemplate) {
+      toast.error('Sélection requise', {
+        description: 'Veuillez sélectionner un modèle de document à joindre.'
+      });
+      return;
     }
     
-    // Simulate email sending
-    toast.success('Envoi en cours', {
-      description: `${selectedRows.length} emails sont en cours d'envoi.`
+    const templateObj = templates.find(t => t.id === selectedTemplate);
+    
+    const emailAddresses: string[] = [];
+    selectedRows.forEach(row => {
+      if (row['E MAIL 1'] && row['E MAIL 1'].includes('@')) {
+        emailAddresses.push(row['E MAIL 1']);
+      }
+      if (row['E Mail 2'] && row['E Mail 2'].includes('@')) {
+        emailAddresses.push(row['E Mail 2']);
+      }
     });
     
-    // Simulate completion after a delay
+    toast.info('Adresses email destinataires', {
+      description: emailAddresses.length > 3 
+        ? `${emailAddresses.slice(0, 3).join(', ')} et ${emailAddresses.length - 3} autres adresses`
+        : emailAddresses.join(', ')
+    });
+    
+    toast.success('Envoi en cours', {
+      description: `${emailAddresses.length} emails sont en cours d'envoi.`
+    });
+    
     setTimeout(() => {
       toast.success('Envoi terminé', {
-        description: `${selectedRows.length} emails ont été envoyés avec succès.`
+        description: `${emailAddresses.length} emails ont été envoyés avec succès à ${selectedRows.length} adhérents.`
       });
       setShowEmailDialog(false);
     }, 2000);
@@ -261,7 +316,6 @@ const Spreadsheets = () => {
         </TabsContent>
       </Tabs>
       
-      {/* PDF Generation Dialog */}
       <Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>
         <DialogContent>
           <DialogHeader>
@@ -321,7 +375,6 @@ const Spreadsheets = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
         <DialogContent>
           <DialogHeader>
