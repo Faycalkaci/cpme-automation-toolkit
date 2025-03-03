@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect } from 'react';
 import { AuthContextType, User } from './types';
 import { useAuthState } from './useAuthState';
@@ -6,6 +5,7 @@ import { useAuthMethods } from './useAuthMethods';
 import { useTwoFactorAuth } from './useTwoFactorAuth';
 import { useDeviceManagement } from './useDeviceManagement';
 import { getDeviceId, getLocation } from './authUtils';
+import { Timestamp } from 'firebase/firestore';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -50,10 +50,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     MAX_DEVICES
   );
 
-  // Mettre à jour l'utilisateur lorsque le profil Firebase change
   useEffect(() => {
     if (!isFirebaseLoading && userProfile) {
-      // Convertir le profil Firebase en format utilisateur pour notre application
       const convertedUser: User = {
         id: userProfile.id || '',
         email: userProfile.email,
@@ -74,25 +72,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [isFirebaseLoading, userProfile, setUser, setIsLoading]);
 
-  // Vérifier l'authentification au chargement
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Cette logique est maintenant gérée par Firebase Context
-        // Le code existant reste pour la rétrocompatibilité
-        
-        // Si Firebase n'est pas utilisé, vérifier l'authentification locale
         if (!userProfile) {
           const storedUser = localStorage.getItem('cpme-user');
           if (storedUser) {
             const parsedUser = JSON.parse(storedUser);
             
-            // Ajouter l'appareil actuel s'il n'est pas déjà enregistré
             const deviceId = getDeviceId();
             if (!parsedUser.devices) {
               parsedUser.devices = [deviceId];
             } else if (!parsedUser.devices.includes(deviceId)) {
-              // Vérifier la limite d'appareils
               if (parsedUser.devices.length >= MAX_DEVICES) {
                 toast({
                   title: "Limite d'appareils atteinte",
@@ -107,11 +98,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               parsedUser.devices.push(deviceId);
             }
             
-            // Mettre à jour la dernière connexion et localisation
             parsedUser.lastLogin = new Date().toISOString();
             parsedUser.lastLocation = await getLocation();
             
-            // Sauvegarder les modifications
             localStorage.setItem('cpme-user', JSON.stringify(parsedUser));
             setUser(parsedUser);
           }

@@ -9,7 +9,7 @@ export interface User {
   organizationId?: string;
   organizationName?: string;
   devices?: string[];
-  lastLogin?: string;
+  lastLogin?: Timestamp | string;
   lastLocation?: string;
 }
 
