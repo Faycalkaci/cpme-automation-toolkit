@@ -8,13 +8,15 @@ interface DataActionsProps {
   onGeneratePdf: (data: any[]) => void;
   onSendEmail: (data: any[]) => void;
   onExport: () => void;
+  isProcessing?: boolean;
 }
 
 const DataActions: React.FC<DataActionsProps> = ({ 
   data, 
   onGeneratePdf, 
   onSendEmail, 
-  onExport 
+  onExport,
+  isProcessing = false
 }) => {
   if (data.length === 0) return null;
   
@@ -28,9 +30,13 @@ const DataActions: React.FC<DataActionsProps> = ({
         <Mail className="mr-2 h-4 w-4" />
         Envoyer par email
       </Button>
-      <Button variant="outline" onClick={onExport}>
+      <Button 
+        variant="outline" 
+        onClick={onExport} 
+        disabled={isProcessing}
+      >
         <Download className="mr-2 h-4 w-4" />
-        Exporter
+        {isProcessing ? 'Exportation...' : 'Exporter'}
       </Button>
     </div>
   );
