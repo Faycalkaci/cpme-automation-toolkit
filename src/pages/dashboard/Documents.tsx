@@ -184,7 +184,7 @@ const Documents = () => {
   });
 
   return (
-    <div className="p-6 lg:p-8 space-y-6">
+    <div className="w-full max-w-full">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

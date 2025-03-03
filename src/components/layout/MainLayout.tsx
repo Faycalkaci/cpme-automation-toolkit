@@ -29,8 +29,8 @@ const MainLayout: React.FC = () => {
           />
         )}
         
-        <main className={`flex-1 transition-all duration-300 ease-in-out ${isAuthenticated ? (isMobile ? 'w-full' : 'ml-0 lg:ml-64') : 'w-full'}`}>
-          <div className="animate-fade-in">
+        <main className={`flex-1 transition-all duration-300 ease-in-out ${isAuthenticated ? (isMobile ? 'w-full' : sidebarOpen ? 'ml-64' : 'ml-16') : 'w-full'}`}>
+          <div className="container mx-auto px-4 animate-fade-in max-w-6xl py-6">
             <Outlet />
           </div>
         </main>

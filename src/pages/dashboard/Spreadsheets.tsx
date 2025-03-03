@@ -92,7 +92,7 @@ const Spreadsheets = () => {
   };
   
   return (
-    <div className="container py-8">
+    <div className="w-full max-w-full">
       <h1 className="text-3xl font-bold mb-8 flex items-center">
         <FileSpreadsheet className="h-8 w-8 mr-3 text-cpme" />
         Gestion des données
