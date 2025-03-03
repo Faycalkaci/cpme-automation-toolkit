@@ -1,5 +1,7 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
+
 const steps = [{
   title: 'Importez vos données',
   description: 'Téléchargez vos fichiers Excel ou CSV contenant les informations de vos adhérents.',
@@ -13,6 +15,7 @@ const steps = [{
   description: 'Générez automatiquement vos documents et envoyez-les par email en un clic.',
   step: '3'
 }];
+
 const containerVariants = {
   hidden: {
     opacity: 0
@@ -24,6 +27,7 @@ const containerVariants = {
     }
   }
 };
+
 const itemVariants = {
   hidden: {
     y: 20,
@@ -39,8 +43,9 @@ const itemVariants = {
     }
   }
 };
+
 const HowItWorks = () => {
-  return <section className="py-20 bg-white">
+  return <section id="how-it-works" className="py-20 bg-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold text-slate-900">Comment ça marche</h2>
@@ -71,4 +76,5 @@ const HowItWorks = () => {
       </div>
     </section>;
 };
+
 export default HowItWorks;

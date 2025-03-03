@@ -3,10 +3,17 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 
 const Hero = () => {
   const navigate = useNavigate();
+  
+  const scrollToHowItWorks = () => {
+    const howItWorksSection = document.getElementById('how-it-works');
+    if (howItWorksSection) {
+      howItWorksSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
   
   return (
     <section className="relative py-20 overflow-hidden">
@@ -46,6 +53,22 @@ const Hero = () => {
             </Button>
             <Button variant="outline" size="lg" onClick={() => navigate('/login')}>
               Se connecter
+            </Button>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
+            className="mt-16"
+          >
+            <Button 
+              variant="ghost" 
+              onClick={scrollToHowItWorks}
+              className="text-slate-600 hover:text-cpme group flex flex-col items-center"
+            >
+              <span className="mb-2">Comment ça marche</span>
+              <ChevronDown className="h-5 w-5 animate-bounce" />
             </Button>
           </motion.div>
         </motion.div>

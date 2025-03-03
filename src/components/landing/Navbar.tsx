@@ -2,9 +2,17 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { ChevronDown } from 'lucide-react';
 
 const Navbar = () => {
   const navigate = useNavigate();
+
+  const scrollToHowItWorks = () => {
+    const howItWorksSection = document.getElementById('how-it-works');
+    if (howItWorksSection) {
+      howItWorksSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm">
@@ -24,6 +32,14 @@ const Navbar = () => {
             <a href="#about" className="text-sm font-medium text-slate-700 hover:text-cpme transition-colors">
               À propos
             </a>
+            <Button 
+              variant="ghost" 
+              onClick={scrollToHowItWorks}
+              className="text-sm font-medium text-slate-700 hover:text-cpme transition-colors flex items-center"
+            >
+              Comment ça marche
+              <ChevronDown className="ml-1 h-4 w-4" />
+            </Button>
           </nav>
 
           <div className="flex items-center space-x-2">
