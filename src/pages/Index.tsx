@@ -96,10 +96,8 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center py-4">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-full bg-cpme flex items-center justify-center">
-                <span className="text-white font-bold">CT</span>
-              </div>
-              <span className="font-bold text-lg tracking-tight text-[#0359f8]">CPME Tool</span>
+              
+              <span className="tracking-tight text-inherit my-0 py-0 text-2xl font-bold mx-[5px] px-[23px]">CPME Tool</span>
             </Link>
             
             <nav className="hidden md:flex items-center space-x-8">
