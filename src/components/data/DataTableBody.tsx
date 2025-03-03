@@ -16,7 +16,7 @@ const DataTableBody: React.FC = () => {
   return (
     <TableBody>
       {filteredData.length > 0 ? (
-        <ScrollArea className="max-h-[250px]">
+        <ScrollArea className="max-h-[500px]">
           {filteredData.map((row, rowIndex) => (
             <TableRow key={rowIndex} className={selectedRows[rowIndex] ? 'bg-primary/5' : ''}>
               <TableCell className="text-center">
