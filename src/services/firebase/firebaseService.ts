@@ -8,7 +8,8 @@ import {
   sendPasswordResetEmail,
   GoogleAuthProvider,
   signInWithPopup,
-  User
+  User,
+  browserPopupRedirectResolver
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
@@ -22,6 +23,11 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const analytics = getAnalytics(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Configuration supplémentaire pour le provider Google
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
 
 // Service d'authentification
 export const firebaseAuth = {
@@ -39,7 +45,9 @@ export const firebaseAuth = {
   // Connexion avec Google
   loginWithGoogle: async () => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      // Utiliser le resolver de popup explicitement
+      const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
+      console.log("Connexion Google réussie:", result.user);
       return result.user;
     } catch (error) {
       console.error('Erreur de connexion Google:', error);

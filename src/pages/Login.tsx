@@ -15,10 +15,11 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Eye, EyeOff, ArrowLeft, Mail } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Spinner } from '@/components/ui/spinner';
 import { firebaseAuth } from '@/services/firebase/firebaseService';
+import { useToast } from '@/components/ui/use-toast';
 
 const formSchema = z.object({
   email: z.string().email('Email invalide'),
@@ -32,6 +33,7 @@ const Login = () => {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
   const [googleLoading, setGoogleLoading] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -53,10 +55,17 @@ const Login = () => {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
+      console.log("Tentative de connexion Google...");
       await firebaseAuth.loginWithGoogle();
+      console.log("Connexion réussie, redirection...");
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Google login error:', error);
+      toast({
+        title: "Échec de la connexion Google",
+        description: error.message || "Une erreur s'est produite lors de la connexion avec Google.",
+        variant: "destructive"
+      });
     } finally {
       setGoogleLoading(false);
     }
