@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { v4 as uuidv4 } from 'uuid';
+import { documentStorage } from '@/services/documentStorage';
 
 interface Template {
   id: string;
@@ -75,7 +77,7 @@ const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
           
           if (templateObj && templateObj.mappingFields) {
             templateObj.mappingFields.forEach(field => {
-              // Check if the field exists in the row data (case insensitive)
+              // Vérifier si le champ existe dans les données de la ligne (insensible à la casse)
               const fieldValue = row[field] || findCaseInsensitiveField(row, field) || '-';
               doc.setFontSize(12);
               doc.text(`${field}: ${fieldValue}`, 10, yPos);
@@ -94,6 +96,35 @@ const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
         
         doc.save(`${templateObj?.id || 'document'}_cpme.pdf`);
         
+        // Créer des entrées pour les documents générés
+        const currentDate = new Date();
+        const formattedDate = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`;
+        
+        const generatedDocuments = selectedRows.map(row => {
+          const company = row.SOCIETE || row.societe || row.Société || row.société || 'Entreprise';
+          const type = templateObj?.name || 'Document';
+          const size = Math.floor(Math.random() * 20) + 40 + ' Ko'; // Taille aléatoire entre 40 et 60 Ko
+          
+          return {
+            id: uuidv4(),
+            name: `${type} - ${company}.pdf`,
+            type,
+            date: formattedDate,
+            size,
+            sent: false,
+            company
+          };
+        });
+        
+        // Sauvegarder les documents générés
+        documentStorage.saveDocuments(generatedDocuments)
+          .then(() => {
+            console.log(`${generatedDocuments.length} documents sauvegardés avec succès`);
+          })
+          .catch(error => {
+            console.error('Erreur lors de la sauvegarde des documents:', error);
+          });
+        
         setIsGenerating(false);
         toast.success('Génération terminée', {
           description: `${selectedRows.length} documents ont été générés avec succès.`
@@ -111,7 +142,7 @@ const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
     }, 1000);
   };
   
-  // Helper function to find field values case-insensitively
+  // Fonction utilitaire pour trouver les valeurs de champ insensibles à la casse
   const findCaseInsensitiveField = (row: any, fieldName: string): string | undefined => {
     const lowerFieldName = fieldName.toLowerCase();
     

@@ -1,63 +1,37 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Document } from './types';
 import { useToast } from '@/components/ui/use-toast';
-
-// Mock document data
-const MOCK_DOCUMENTS = [
-  {
-    id: '1',
-    name: 'Appel de cotisation - Dupont SAS.pdf',
-    type: 'Appel de cotisation',
-    date: '12/03/2023',
-    size: '52 Ko',
-    sent: true,
-    company: 'Dupont SAS'
-  },
-  {
-    id: '2',
-    name: 'Facture - Martin & Co.pdf',
-    type: 'Facture',
-    date: '10/03/2023',
-    size: '48 Ko',
-    sent: true,
-    company: 'Martin & Co'
-  },
-  {
-    id: '3',
-    name: 'Rappel de cotisation - Dubois SARL.pdf',
-    type: 'Rappel de cotisation',
-    date: '05/03/2023',
-    size: '51 Ko',
-    sent: false,
-    company: 'Dubois SARL'
-  },
-  {
-    id: '4',
-    name: 'Appel de cotisation - Lefevre Inc.pdf',
-    type: 'Appel de cotisation',
-    date: '01/03/2023',
-    size: '53 Ko',
-    sent: true,
-    company: 'Lefevre Inc'
-  },
-  {
-    id: '5',
-    name: 'Facture - Moreau SARL.pdf',
-    type: 'Facture',
-    date: '28/02/2023',
-    size: '49 Ko',
-    sent: true,
-    company: 'Moreau SARL'
-  }
-];
+import { documentStorage } from '@/services/documentStorage';
 
 export const useDocuments = () => {
   const { toast } = useToast();
-  const [documents] = useState<Document[]>(MOCK_DOCUMENTS);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Charger les documents depuis le stockage
+  useEffect(() => {
+    const loadDocuments = async () => {
+      setIsLoading(true);
+      try {
+        const storedDocuments = await documentStorage.getDocuments();
+        setDocuments(storedDocuments);
+      } catch (error) {
+        console.error('Erreur lors du chargement des documents:', error);
+        toast({
+          title: "Erreur de chargement",
+          description: "Impossible de charger les documents. Veuillez réessayer."
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadDocuments();
+  }, [toast]);
 
   const downloadDocument = (id: string) => {
     toast({
@@ -71,21 +45,49 @@ export const useDocuments = () => {
       title: "Aperçu du document",
       description: "L'aperçu du document s'ouvrira dans un nouvel onglet."
     });
-    // In a real app, this would open the document in a new tab or modal
+    // Dans une vraie application, cela ouvrirait le document dans un nouvel onglet ou une modal
   };
 
   const sendEmail = (id: string) => {
-    toast({
-      title: "Email envoyé",
-      description: "Le document a été envoyé par email avec succès."
-    });
+    // Mettre à jour le document comme étant envoyé
+    const updatedDocuments = documents.map(doc => 
+      doc.id === id ? { ...doc, sent: true } : doc
+    );
+    setDocuments(updatedDocuments);
+    
+    // Sauvegarder la mise à jour
+    const updatedDoc = updatedDocuments.find(doc => doc.id === id);
+    if (updatedDoc) {
+      documentStorage.saveDocument(updatedDoc)
+        .then(() => {
+          toast({
+            title: "Email envoyé",
+            description: "Le document a été envoyé par email avec succès."
+          });
+        })
+        .catch(error => {
+          console.error('Erreur lors de la mise à jour du document:', error);
+        });
+    }
   };
 
-  const deleteDocument = (id: string) => {
-    toast({
-      title: "Document supprimé",
-      description: "Le document a été supprimé avec succès."
-    });
+  const deleteDocument = async (id: string) => {
+    try {
+      await documentStorage.deleteDocument(id);
+      setDocuments(prev => prev.filter(doc => doc.id !== id));
+      setSelectedDocs(prev => prev.filter(docId => docId !== id));
+      
+      toast({
+        title: "Document supprimé",
+        description: "Le document a été supprimé avec succès."
+      });
+    } catch (error) {
+      console.error('Erreur lors de la suppression du document:', error);
+      toast({
+        title: "Erreur de suppression",
+        description: "Impossible de supprimer le document. Veuillez réessayer."
+      });
+    }
   };
 
   const toggleSelectDocument = (id: string) => {
@@ -120,7 +122,7 @@ export const useDocuments = () => {
     });
   };
 
-  const bulkEmail = () => {
+  const bulkEmail = async () => {
     if (selectedDocs.length === 0) {
       toast({
         title: "Aucun document sélectionné",
@@ -130,13 +132,35 @@ export const useDocuments = () => {
       return;
     }
 
-    toast({
-      title: "Emails envoyés",
-      description: `${selectedDocs.length} document(s) ont été envoyés par email avec succès.`
-    });
+    try {
+      // Mettre à jour les documents comme étant envoyés
+      const updatedDocuments = documents.map(doc => 
+        selectedDocs.includes(doc.id) ? { ...doc, sent: true } : doc
+      );
+      setDocuments(updatedDocuments);
+      
+      // Sauvegarder les documents mis à jour
+      await Promise.all(
+        updatedDocuments
+          .filter(doc => selectedDocs.includes(doc.id))
+          .map(doc => documentStorage.saveDocument(doc))
+      );
+      
+      toast({
+        title: "Emails envoyés",
+        description: `${selectedDocs.length} document(s) ont été envoyés par email avec succès.`
+      });
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi des emails:', error);
+      toast({
+        title: "Erreur d'envoi",
+        description: "Une erreur est survenue lors de l'envoi des emails.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const bulkDelete = () => {
+  const bulkDelete = async () => {
     if (selectedDocs.length === 0) {
       toast({
         title: "Aucun document sélectionné",
@@ -146,21 +170,34 @@ export const useDocuments = () => {
       return;
     }
 
-    toast({
-      title: "Documents supprimés",
-      description: `${selectedDocs.length} document(s) ont été supprimés avec succès.`
-    });
+    try {
+      await documentStorage.deleteDocuments(selectedDocs);
+      setDocuments(prev => prev.filter(doc => !selectedDocs.includes(doc.id)));
+      setSelectedDocs([]);
+      
+      toast({
+        title: "Documents supprimés",
+        description: `${selectedDocs.length} document(s) ont été supprimés avec succès.`
+      });
+    } catch (error) {
+      console.error('Erreur lors de la suppression des documents:', error);
+      toast({
+        title: "Erreur de suppression",
+        description: "Une erreur est survenue lors de la suppression des documents.",
+        variant: "destructive"
+      });
+    }
   };
 
   const filterDocuments = (docs: Document[]) => {
     return docs.filter(doc => {
-      // Filter by search term
+      // Filtrer par terme de recherche
       const matchesSearch = 
         doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         doc.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
         doc.type.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Filter by tab
+      // Filtrer par onglet
       const matchesTab = 
         activeTab === 'all' ||
         (activeTab === 'appel' && doc.type === 'Appel de cotisation') ||
@@ -178,6 +215,7 @@ export const useDocuments = () => {
     setSearchTerm,
     activeTab,
     setActiveTab,
+    isLoading,
     downloadDocument,
     viewDocument,
     sendEmail,

@@ -1,9 +1,12 @@
+
 import React from 'react';
 import { toast } from 'sonner';
 import { useDataTable } from './DataTableContext';
 import { generateAndDownloadPdf, validateRequiredFields } from '@/utils/pdfUtils';
 import { getValidEmailsFromData, displayEmailResults, displayEmailAddresses } from '@/utils/emailUtils';
 import { exportToCsv } from '@/utils/exportUtils';
+import { documentStorage } from '@/services/documentStorage';
+import { v4 as uuidv4 } from 'uuid';
 
 export const useDataTableOperations = () => {
   const { 
@@ -31,7 +34,36 @@ export const useDataTableOperations = () => {
     }
     
     onGeneratePdf(selectedData);
+    
+    // Générer et télécharger le PDF
     generateAndDownloadPdf(selectedData, headers);
+    
+    // Sauvegarder les documents générés
+    const currentDate = new Date();
+    const formattedDate = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`;
+    
+    // Créer un document pour chaque ligne sélectionnée
+    const generatedDocuments = selectedData.map(row => {
+      const company = row.SOCIETE || row.societe || row.Société || row.société || 'Entreprise';
+      return {
+        id: uuidv4(),
+        name: `Appel de cotisation - ${company}.pdf`,
+        type: 'Appel de cotisation',
+        date: formattedDate,
+        size: '52 Ko',
+        sent: false,
+        company
+      };
+    });
+    
+    // Sauvegarder les documents
+    documentStorage.saveDocuments(generatedDocuments)
+      .then(() => {
+        console.log(`${generatedDocuments.length} documents sauvegardés avec succès`);
+      })
+      .catch(error => {
+        console.error('Erreur lors de la sauvegarde des documents:', error);
+      });
   };
   
   const handleSendEmail = () => {
@@ -52,6 +84,33 @@ export const useDataTableOperations = () => {
     
     const allValidEmails = emailData.emailsByRow.flatMap(item => item.emails);
     displayEmailAddresses(allValidEmails);
+    
+    // Sauvegarder les documents envoyés
+    const currentDate = new Date();
+    const formattedDate = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`;
+    
+    // Créer un document pour chaque ligne sélectionnée
+    const generatedDocuments = selectedData.map(row => {
+      const company = row.SOCIETE || row.societe || row.Société || row.société || 'Entreprise';
+      return {
+        id: uuidv4(),
+        name: `Email - ${company}.pdf`,
+        type: 'Email',
+        date: formattedDate,
+        size: '48 Ko',
+        sent: true,
+        company
+      };
+    });
+    
+    // Sauvegarder les documents
+    documentStorage.saveDocuments(generatedDocuments)
+      .then(() => {
+        console.log(`${generatedDocuments.length} documents envoyés sauvegardés avec succès`);
+      })
+      .catch(error => {
+        console.error('Erreur lors de la sauvegarde des documents envoyés:', error);
+      });
   };
   
   const handleExportCsv = () => {

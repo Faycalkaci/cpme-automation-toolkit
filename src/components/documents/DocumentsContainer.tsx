@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import DocumentSearch from './DocumentSearch';
 import DocumentActions from './DocumentActions';
@@ -16,6 +17,7 @@ const DocumentsContainer: React.FC = () => {
     setSearchTerm,
     activeTab,
     setActiveTab,
+    isLoading,
     downloadDocument,
     viewDocument,
     sendEmail,
@@ -67,7 +69,12 @@ const DocumentsContainer: React.FC = () => {
         </CardHeader>
         
         <CardContent>
-          {filteredDocuments.length > 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center p-12">
+              <Loader2 className="h-8 w-8 text-primary animate-spin" />
+              <span className="ml-2 text-lg text-slate-600">Chargement des documents...</span>
+            </div>
+          ) : filteredDocuments.length > 0 ? (
             <DocumentTable 
               documents={filteredDocuments}
               selectedDocs={selectedDocs}
