@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import MainLayout from "./components/layout/MainLayout";
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -17,9 +18,7 @@ import Templates from "./pages/dashboard/Templates";
 import Emails from "./pages/dashboard/Emails";
 import Settings from "./pages/dashboard/Settings";
 import SuperAdmin from "./pages/dashboard/SuperAdmin";
-import Onboarding from "./pages/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { TutorialGuide } from "./components/onboarding/TutorialGuide";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -58,8 +57,8 @@ function AppRoutes() {
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-        <Route element={<ProtectedRoute><MainLayout /><TutorialGuide /></ProtectedRoute>}>
+        <Route path="/contact" element={<Contact />} />
+        <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/spreadsheets" element={<Spreadsheets />} />
           <Route path="/documents" element={<Documents />} />
