@@ -1,3 +1,4 @@
+
 import { toast } from 'sonner';
 
 // Template interface
@@ -9,6 +10,7 @@ export interface Template {
   mappingFields: string[];
   createdAt: Date;
   createdBy?: string;
+  lastUpdated?: Date;
 }
 
 // Storage keys
@@ -34,7 +36,7 @@ export const templateStorage = {
         // Update existing template
         templates[existingIndex] = {
           ...template,
-          updatedAt: new Date()
+          lastUpdated: new Date()
         };
       } else {
         // Add new template
@@ -70,7 +72,8 @@ export const templateStorage = {
       // Convert date strings to Date objects
       return templates.map(template => ({
         ...template,
-        createdAt: new Date(template.createdAt)
+        createdAt: new Date(template.createdAt),
+        lastUpdated: template.lastUpdated ? new Date(template.lastUpdated) : undefined
       }));
       
       // If this were a Firebase implementation, we would do something like:
