@@ -1,14 +1,15 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import { documentStorage } from '@/services/documentStorage';
 import { pdfMappingService } from '@/services/pdfMappingService';
 import { templateStorage } from '@/services/templateStorage';
-import { Template } from '@/components/admin/templates/types';
+import { SpreadsheetTemplate } from '@/hooks/useSpreadsheetTemplates';
 
 export const usePdfGeneration = (
   selectedTemplate: string,
-  templates: Template[],
+  templates: SpreadsheetTemplate[],
   onComplete: () => void
 ) => {
   const [isGenerating, setIsGenerating] = useState(false);
