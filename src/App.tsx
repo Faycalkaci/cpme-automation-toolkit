@@ -16,7 +16,10 @@ import Documents from "./pages/dashboard/Documents";
 import Templates from "./pages/dashboard/Templates";
 import Emails from "./pages/dashboard/Emails";
 import Settings from "./pages/dashboard/Settings";
+import SuperAdmin from "./pages/dashboard/SuperAdmin";
+import Onboarding from "./pages/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { TutorialGuide } from "./components/onboarding/TutorialGuide";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -33,6 +36,21 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Super admin route component
+const SuperAdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center">Chargement...</div>;
+  }
+  
+  if (!user || user.role !== 'super-admin') {
+    return <Navigate to="/dashboard" />;
+  }
+  
+  return <>{children}</>;
+};
+
 function AppRoutes() {
   return (
     <Router>
@@ -40,13 +58,15 @@ function AppRoutes() {
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+        <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+        <Route element={<ProtectedRoute><MainLayout /><TutorialGuide /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/spreadsheets" element={<Spreadsheets />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/templates" element={<Templates />} />
           <Route path="/emails" element={<Emails />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/admin" element={<SuperAdminRoute><SuperAdmin /></SuperAdminRoute>} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

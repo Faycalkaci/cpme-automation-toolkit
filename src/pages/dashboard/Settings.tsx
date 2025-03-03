@@ -1,82 +1,53 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  User, 
-  Lock, 
-  Building, 
-  Mail, 
-  Settings as SettingsIcon, 
-  Bell, 
-  Shield, 
-  Users, 
-  LogOut 
-} from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
-import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, Check, KeyRound, MailIcon, Shield, Smartphone, User } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const Settings = () => {
   const { toast } = useToast();
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user, enableTwoFactorAuth, verifyTwoFactorCode, isTwoFactorEnabled, getDeviceCount, MAX_DEVICES } = useAuth();
   
-  const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    organization: user?.organizationName || 'CPME Seine-Saint-Denis',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
+  const [fullname, setFullname] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [showTwoFactorDialog, setShowTwoFactorDialog] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [securityAlerts, setSecurityAlerts] = useState(true);
   
-  const [notifications, setNotifications] = useState({
-    emailNotifications: true,
-    documentGenerated: true,
-    emailSent: true,
-    loginAlerts: true
-  });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  // Obtenir les initiales de l'utilisateur pour l'avatar fallback
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase();
   };
-
-  const handleNotificationChange = (name: string, checked: boolean) => {
-    setNotifications(prev => ({ ...prev, [name]: checked }));
-  };
-
-  const saveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
+  
+  const handleSaveProfile = () => {
     toast({
       title: "Profil mis à jour",
       description: "Vos informations de profil ont été mises à jour avec succès."
     });
   };
-
-  const changePassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (formData.newPassword !== formData.confirmPassword) {
+  
+  const handleChangePassword = () => {
+    if (!currentPassword || !newPassword) {
       toast({
-        title: "Erreur",
-        description: "Les mots de passe ne correspondent pas.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (formData.newPassword.length < 6) {
-      toast({
-        title: "Erreur",
-        description: "Le mot de passe doit contenir au moins 6 caractères.",
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs.",
         variant: "destructive"
       });
       return;
@@ -87,29 +58,35 @@ const Settings = () => {
       description: "Votre mot de passe a été modifié avec succès."
     });
     
-    setFormData(prev => ({
-      ...prev,
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    }));
+    setCurrentPassword('');
+    setNewPassword('');
   };
-
-  const saveNotifications = () => {
-    toast({
-      title: "Préférences de notification enregistrées",
-      description: "Vos préférences de notification ont été mises à jour avec succès."
-    });
+  
+  const handleEnableTwoFactor = async () => {
+    try {
+      await enableTwoFactorAuth();
+      setShowTwoFactorDialog(true);
+    } catch (error) {
+      console.error('Erreur lors de l\'activation 2FA:', error);
+    }
   };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  
+  const handleVerifyTwoFactorCode = async () => {
+    try {
+      const isValid = await verifyTwoFactorCode(twoFactorCode);
+      
+      if (isValid) {
+        setShowTwoFactorDialog(false);
+        setTwoFactorCode('');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification du code:', error);
+    }
   };
-
-  const isAdmin = user?.role === 'admin' || user?.role === 'super-admin';
-  const isSuperAdmin = user?.role === 'super-admin';
-
+  
+  const deviceCount = getDeviceCount();
+  const deviceLimit = MAX_DEVICES;
+  
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <motion.div
@@ -119,484 +96,335 @@ const Settings = () => {
       >
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Paramètres</h1>
         <p className="text-slate-600 mb-6">
-          Gérez votre compte et vos préférences
+          Gérez votre profil, la sécurité et les notifications
         </p>
-
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:w-auto">
+        
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="mb-6">
             <TabsTrigger value="profile" className="flex items-center">
               <User className="h-4 w-4 mr-2" />
               Profil
             </TabsTrigger>
             <TabsTrigger value="security" className="flex items-center">
-              <Lock className="h-4 w-4 mr-2" />
+              <Shield className="h-4 w-4 mr-2" />
               Sécurité
             </TabsTrigger>
             <TabsTrigger value="notifications" className="flex items-center">
-              <Bell className="h-4 w-4 mr-2" />
+              <MailIcon className="h-4 w-4 mr-2" />
               Notifications
             </TabsTrigger>
-            {isAdmin && (
-              <TabsTrigger value="organization" className="flex items-center">
-                <Building className="h-4 w-4 mr-2" />
-                Organisation
-              </TabsTrigger>
-            )}
           </TabsList>
-
+          
+          {/* Onglet Profil */}
           <TabsContent value="profile">
             <Card>
-              <form onSubmit={saveProfile}>
-                <CardHeader>
-                  <CardTitle>Informations du profil</CardTitle>
-                  <CardDescription>
-                    Modifiez vos informations personnelles
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nom complet</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                    />
+              <CardHeader>
+                <CardTitle>Informations de profil</CardTitle>
+                <CardDescription>
+                  Mettez à jour vos informations personnelles
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="space-y-6">
+                <div className="flex flex-col sm:flex-row gap-6 items-start">
+                  <div className="flex-shrink-0">
+                    <Avatar className="h-24 w-24">
+                      <AvatarImage src="" />
+                      <AvatarFallback className="text-xl">
+                        {user ? getInitials(user.name) : '?'}
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Adresse email</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                    />
+                  
+                  <div className="space-y-4 flex-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="fullname">Nom complet</Label>
+                        <Input 
+                          id="fullname" 
+                          value={fullname} 
+                          onChange={(e) => setFullname(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Adresse email</Label>
+                        <Input 
+                          id="email" 
+                          type="email" 
+                          value={email} 
+                          onChange={(e) => setEmail(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Organisation</Label>
+                      <div className="p-2 bg-slate-100 rounded text-slate-700">
+                        {user?.organizationName || 'CPME Tool'}
+                        {user?.role === 'admin' && (
+                          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            Administrateur
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="organization">Organisation</Label>
-                    <Input
-                      id="organization"
-                      name="organization"
-                      value={formData.organization}
-                      onChange={handleInputChange}
-                      disabled={!isAdmin}
-                    />
-                    {!isAdmin && (
-                      <p className="text-xs text-slate-500 mt-1">
-                        Seuls les administrateurs peuvent modifier le nom de l'organisation.
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Button variant="outline" type="button">
-                    Annuler
-                  </Button>
-                  <Button type="submit">
-                    Enregistrer
-                  </Button>
-                </CardFooter>
-              </form>
+                </div>
+              </CardContent>
+              
+              <CardFooter className="flex justify-end">
+                <Button onClick={handleSaveProfile}>
+                  Enregistrer les modifications
+                </Button>
+              </CardFooter>
             </Card>
           </TabsContent>
-
+          
+          {/* Onglet Sécurité */}
           <TabsContent value="security">
-            <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-              <Card>
-                <form onSubmit={changePassword}>
-                  <CardHeader>
-                    <CardTitle>Changer le mot de passe</CardTitle>
-                    <CardDescription>
-                      Mettez à jour votre mot de passe pour sécuriser votre compte
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Mot de passe actuel</Label>
-                      <Input
-                        id="currentPassword"
-                        name="currentPassword"
-                        type="password"
-                        value={formData.currentPassword}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="newPassword">Nouveau mot de passe</Label>
-                      <Input
-                        id="newPassword"
-                        name="newPassword"
-                        type="password"
-                        value={formData.newPassword}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
-                      <Input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type="password"
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button type="submit" className="w-full">
-                      Changer le mot de passe
-                    </Button>
-                  </CardFooter>
-                </form>
-              </Card>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Modification du mot de passe */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Options de sécurité</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <KeyRound className="h-5 w-5 text-slate-500" />
+                    <CardTitle>Mot de passe</CardTitle>
+                  </div>
                   <CardDescription>
-                    Gérez les paramètres de sécurité de votre compte
+                    Changez votre mot de passe
                   </CardDescription>
                 </CardHeader>
+                
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Authentification à deux facteurs</Label>
-                      <p className="text-sm text-slate-500">
-                        Ajouter une couche de sécurité supplémentaire à votre compte
-                      </p>
-                    </div>
-                    <Button variant="outline">Configurer</Button>
+                  <div className="space-y-2">
+                    <Label htmlFor="current-password">Mot de passe actuel</Label>
+                    <Input 
+                      id="current-password" 
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                    />
                   </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Sessions actives</Label>
-                      <p className="text-sm text-slate-500">
-                        Gérez les appareils connectés à votre compte
-                      </p>
-                    </div>
-                    <Button variant="outline">Gérer</Button>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">Nouveau mot de passe</Label>
+                    <Input 
+                      id="new-password" 
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
                   </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Déconnexion</Label>
-                      <p className="text-sm text-slate-500">
-                        Se déconnecter de toutes les sessions
-                      </p>
-                    </div>
-                    <Button variant="destructive" onClick={handleLogout}>
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Déconnexion
-                    </Button>
+                  
+                  <div className="text-sm text-slate-500">
+                    <p>Votre mot de passe doit contenir :</p>
+                    <ul className="list-disc list-inside mt-1 space-y-1">
+                      <li>Au moins 8 caractères</li>
+                      <li>Des lettres majuscules et minuscules</li>
+                      <li>Au moins un chiffre</li>
+                    </ul>
                   </div>
                 </CardContent>
+                
+                <CardFooter>
+                  <Button 
+                    onClick={handleChangePassword} 
+                    className="w-full"
+                  >
+                    Modifier le mot de passe
+                  </Button>
+                </CardFooter>
+              </Card>
+              
+              {/* Authentification à deux facteurs */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-slate-500" />
+                    <CardTitle>Authentification à deux facteurs</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Renforcez la sécurité de votre compte
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>État de la 2FA</Label>
+                      <p className="text-sm text-slate-500">
+                        {isTwoFactorEnabled ? 
+                          "L'authentification à deux facteurs est activée" : 
+                          "L'authentification à deux facteurs est désactivée"}
+                      </p>
+                    </div>
+                    <Switch checked={isTwoFactorEnabled} onCheckedChange={handleEnableTwoFactor} />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="h-5 w-5 text-slate-500" />
+                      <Label>Appareils connectés</Label>
+                    </div>
+                    
+                    <div className="p-3 rounded-md bg-slate-50">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium">Limite d'appareils</span>
+                        <span className="text-sm">{deviceCount} / {deviceLimit}</span>
+                      </div>
+                      
+                      <div className="h-2 bg-slate-200 rounded-full">
+                        <div 
+                          className={`h-2 rounded-full ${
+                            deviceCount === deviceLimit ? 'bg-red-500' : 'bg-green-500'
+                          }`} 
+                          style={{ width: `${(deviceCount / deviceLimit) * 100}%` }}
+                        ></div>
+                      </div>
+                      
+                      {deviceCount === deviceLimit && (
+                        <p className="text-xs text-amber-600 mt-2 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          Vous avez atteint la limite d'appareils autorisés
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+                
+                <CardFooter>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                  >
+                    Gérer les appareils connectés
+                  </Button>
+                </CardFooter>
               </Card>
             </div>
+            
+            {/* Alerte de sécurité */}
+            <Alert className="mt-6 border-yellow-200 bg-yellow-50">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTitle className="text-yellow-800">Rappel de sécurité</AlertTitle>
+              <AlertDescription className="text-yellow-700">
+                Pour votre sécurité, ne partagez jamais vos identifiants et activez l'authentification à deux facteurs.
+              </AlertDescription>
+            </Alert>
           </TabsContent>
-
+          
+          {/* Onglet Notifications */}
           <TabsContent value="notifications">
             <Card>
               <CardHeader>
-                <CardTitle>Préférences de notification</CardTitle>
+                <CardTitle>Préférences de notifications</CardTitle>
                 <CardDescription>
-                  Choisissez quand et comment vous souhaitez être notifié
+                  Gérez les notifications que vous recevez
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Notifications par email</Label>
-                    <p className="text-sm text-slate-500">
-                      Recevoir des notifications par email
-                    </p>
+              
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Notifications par email</Label>
+                      <p className="text-sm text-slate-500">
+                        Recevoir des emails concernant vos activités et documents
+                      </p>
+                    </div>
+                    <Switch 
+                      checked={emailNotifications} 
+                      onCheckedChange={setEmailNotifications} 
+                    />
                   </div>
-                  <Switch
-                    checked={notifications.emailNotifications}
-                    onCheckedChange={(checked) => handleNotificationChange('emailNotifications', checked)}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Document généré</Label>
-                    <p className="text-sm text-slate-500">
-                      Notification lorsqu'un document est généré
-                    </p>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Alertes de sécurité</Label>
+                      <p className="text-sm text-slate-500">
+                        Recevoir des alertes concernant les connexions suspectes
+                      </p>
+                    </div>
+                    <Switch 
+                      checked={securityAlerts} 
+                      onCheckedChange={setSecurityAlerts} 
+                    />
                   </div>
-                  <Switch
-                    checked={notifications.documentGenerated}
-                    onCheckedChange={(checked) => handleNotificationChange('documentGenerated', checked)}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Email envoyé</Label>
-                    <p className="text-sm text-slate-500">
-                      Notification lorsqu'un email est envoyé
-                    </p>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Rappels d'échéance</Label>
+                      <p className="text-sm text-slate-500">
+                        Recevoir des rappels pour les échéances importantes
+                      </p>
+                    </div>
+                    <Switch defaultChecked />
                   </div>
-                  <Switch
-                    checked={notifications.emailSent}
-                    onCheckedChange={(checked) => handleNotificationChange('emailSent', checked)}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Alertes de connexion</Label>
-                    <p className="text-sm text-slate-500">
-                      Notification lors d'une connexion depuis un nouvel appareil
-                    </p>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Notifications marketing</Label>
+                      <p className="text-sm text-slate-500">
+                        Recevoir des informations sur les nouvelles fonctionnalités
+                      </p>
+                    </div>
+                    <Switch defaultChecked={false} />
                   </div>
-                  <Switch
-                    checked={notifications.loginAlerts}
-                    onCheckedChange={(checked) => handleNotificationChange('loginAlerts', checked)}
-                  />
                 </div>
               </CardContent>
+              
               <CardFooter>
-                <Button 
-                  className="w-full"
-                  onClick={saveNotifications}
-                >
+                <Button onClick={() => {
+                  toast({
+                    title: "Préférences enregistrées",
+                    description: "Vos préférences de notifications ont été mises à jour."
+                  });
+                }}>
                   Enregistrer les préférences
                 </Button>
               </CardFooter>
             </Card>
           </TabsContent>
-
-          {isAdmin && (
-            <TabsContent value="organization">
-              <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Informations de l'organisation</CardTitle>
-                    <CardDescription>
-                      Modifier les détails de votre organisation
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="orgName">Nom de l'organisation</Label>
-                      <Input
-                        id="orgName"
-                        defaultValue={user?.organizationName || "CPME Seine-Saint-Denis"}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="orgEmail">Email de contact</Label>
-                      <Input
-                        id="orgEmail"
-                        type="email"
-                        defaultValue="contact@cpme93.fr"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="orgAddress">Adresse</Label>
-                      <Input
-                        id="orgAddress"
-                        defaultValue="45 avenue Victor Hugo, 93000 Bobigny"
-                      />
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button className="w-full">
-                      Enregistrer les modifications
-                    </Button>
-                  </CardFooter>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      {isSuperAdmin ? "Gestion des licences" : "Information de licence"}
-                    </CardTitle>
-                    <CardDescription>
-                      {isSuperAdmin 
-                        ? "Gérez les licences attribuées à cette organisation" 
-                        : "Détails de votre licence CPME Tool"}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {isSuperAdmin ? (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label>Licences actives</Label>
-                            <p className="text-sm text-slate-500">
-                              Nombre total de licences actives
-                            </p>
-                          </div>
-                          <span className="font-medium text-lg">
-                            5 / 10
-                          </span>
-                        </div>
-
-                        <Separator />
-
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label>Ajouter des licences</Label>
-                            <p className="text-sm text-slate-500">
-                              Attribuer plus de licences à cette organisation
-                            </p>
-                          </div>
-                          <Button variant="outline">
-                            Gérer les licences
-                          </Button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label>Type de licence</Label>
-                              <p className="text-sm text-slate-500">
-                                Votre forfait actuel
-                              </p>
-                            </div>
-                            <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
-                              Premium
-                            </span>
-                          </div>
-
-                          <Separator />
-
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label>Utilisateurs autorisés</Label>
-                              <p className="text-sm text-slate-500">
-                                Nombre d'utilisateurs inclus dans votre forfait
-                              </p>
-                            </div>
-                            <span className="font-medium">10 utilisateurs</span>
-                          </div>
-
-                          <Separator />
-
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label>Date de renouvellement</Label>
-                              <p className="text-sm text-slate-500">
-                                Votre prochaine facturation
-                              </p>
-                            </div>
-                            <span className="font-medium">15/06/2023</span>
-                          </div>
-                        </div>
-
-                        <Button variant="outline" className="w-full mt-4">
-                          Mettre à niveau mon forfait
-                        </Button>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {isAdmin && (
-                  <Card className="lg:col-span-2">
-                    <CardHeader>
-                      <CardTitle>Gestion des utilisateurs</CardTitle>
-                      <CardDescription>
-                        Gérez les utilisateurs de votre organisation
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="border rounded-md overflow-hidden">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="bg-slate-50 text-left">
-                              <th className="p-3 text-slate-500 font-medium text-sm">Utilisateur</th>
-                              <th className="p-3 text-slate-500 font-medium text-sm">Email</th>
-                              <th className="p-3 text-slate-500 font-medium text-sm">Rôle</th>
-                              <th className="p-3 text-slate-500 font-medium text-sm">Statut</th>
-                              <th className="p-3 text-slate-500 font-medium text-sm text-right">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr className="border-t border-slate-200">
-                              <td className="p-3">
-                                <div className="flex items-center">
-                                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-2">
-                                    <User className="h-4 w-4 text-primary" />
-                                  </div>
-                                  <span className="font-medium text-slate-900">Jean Dupont</span>
-                                </div>
-                              </td>
-                              <td className="p-3 text-slate-700">jean.dupont@example.com</td>
-                              <td className="p-3">
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                  Admin
-                                </span>
-                              </td>
-                              <td className="p-3">
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  Actif
-                                </span>
-                              </td>
-                              <td className="p-3 text-right">
-                                <Button variant="ghost" size="sm">
-                                  Modifier
-                                </Button>
-                              </td>
-                            </tr>
-                            <tr className="border-t border-slate-200">
-                              <td className="p-3">
-                                <div className="flex items-center">
-                                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mr-2">
-                                    <User className="h-4 w-4 text-slate-500" />
-                                  </div>
-                                  <span className="font-medium text-slate-900">Marie Martin</span>
-                                </div>
-                              </td>
-                              <td className="p-3 text-slate-700">marie.martin@example.com</td>
-                              <td className="p-3">
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                  Utilisateur
-                                </span>
-                              </td>
-                              <td className="p-3">
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  Actif
-                                </span>
-                              </td>
-                              <td className="p-3 text-right">
-                                <Button variant="ghost" size="sm">
-                                  Modifier
-                                </Button>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button className="ml-auto">
-                        <Users className="h-4 w-4 mr-2" />
-                        Ajouter un utilisateur
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                )}
-              </div>
-            </TabsContent>
-          )}
         </Tabs>
       </motion.div>
+      
+      {/* Dialog pour l'activation de la 2FA */}
+      <Dialog open={showTwoFactorDialog} onOpenChange={setShowTwoFactorDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Vérification à deux facteurs</DialogTitle>
+            <DialogDescription>
+              Nous avons envoyé un code à 6 chiffres à votre adresse email. Veuillez le saisir ci-dessous pour activer l'authentification à deux facteurs.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="verification-code">Code de vérification</Label>
+              <Input 
+                id="verification-code" 
+                placeholder="123456" 
+                maxLength={6}
+                value={twoFactorCode}
+                onChange={(e) => setTwoFactorCode(e.target.value)}
+              />
+              <p className="text-xs text-slate-500">
+                Pour cette démo, vous pouvez entrer n'importe quel code à 6 chiffres.
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTwoFactorDialog(false)}>
+              Annuler
+            </Button>
+            <Button type="button" onClick={handleVerifyTwoFactorCode}>
+              Vérifier
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
