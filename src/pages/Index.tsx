@@ -3,11 +3,31 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, ArrowRight, Shield, Database, FileText, Mail, Video } from 'lucide-react';
-import { IntroVideo } from '@/components/onboarding/IntroVideo';
+import { 
+  CheckCircle, 
+  ArrowRight, 
+  Shield, 
+  Database, 
+  FileText, 
+  Mail, 
+  Users, 
+  Star, 
+  MessageCircle 
+} from 'lucide-react';
+import { CustomerExperience } from '@/components/onboarding/CustomerExperience';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 const Index = () => {
   const navigate = useNavigate();
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+
+  // Pricing constants
+  const DISCOUNT_PERCENTAGE = 20;
+  const prices = {
+    standard: { monthly: 49, annual: 49 * 12 * (1 - DISCOUNT_PERCENTAGE / 100) },
+    pro: { monthly: 99, annual: 99 * 12 * (1 - DISCOUNT_PERCENTAGE / 100) },
+    enterprise: { monthly: 199, annual: 199 * 12 * (1 - DISCOUNT_PERCENTAGE / 100) }
+  };
 
   const features = [
     {
@@ -29,6 +49,27 @@ const Index = () => {
       icon: <Shield className="h-6 w-6 text-primary" />,
       title: 'Sécurité avancée',
       description: 'Protection des données et conformité RGPD garanties.'
+    }
+  ];
+
+  const testimonials = [
+    {
+      name: "Marie-Claire Durand",
+      role: "Assistante Administrative, CPME 93",
+      content: "Avant CPME Tool, je passais des heures à copier-coller des données. Maintenant, je génère tous mes documents en quelques clics !",
+      rating: 5
+    },
+    {
+      name: "Valérie Martin",
+      role: "Présidente, CPME Seine-Saint-Denis",
+      content: "Une solution adaptée à nos besoins qui a considérablement amélioré notre productivité. Notre équipe gagne un temps précieux.",
+      rating: 5
+    },
+    {
+      name: "Philippe Dubois",
+      role: "Directeur, CPME Loire",
+      content: "L'interface est intuitive et la génération de documents fonctionne parfaitement. Le support client est également très réactif.",
+      rating: 4
     }
   ];
 
@@ -55,8 +96,51 @@ const Index = () => {
     }
   };
 
+  // Format price with euro symbol
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(price);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-slate-50">
+      {/* Top Navigation */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex justify-between items-center py-4">
+            <Link to="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 rounded-full bg-cpme flex items-center justify-center">
+                <span className="text-white font-bold">CT</span>
+              </div>
+              <span className="font-bold text-lg tracking-tight">CPME Tool</span>
+            </Link>
+            
+            <nav className="hidden md:flex items-center space-x-8">
+              <a href="#features" className="text-sm font-medium text-slate-700 hover:text-cpme transition-colors">
+                Fonctionnalités
+              </a>
+              <a href="#pricing" className="text-sm font-medium text-slate-700 hover:text-cpme transition-colors">
+                Tarifs
+              </a>
+              <a href="#about" className="text-sm font-medium text-slate-700 hover:text-cpme transition-colors">
+                À propos
+              </a>
+              <a href="#tools" className="text-sm font-medium text-slate-700 hover:text-cpme transition-colors">
+                Outils PDF Publics
+              </a>
+            </nav>
+
+            <div className="flex items-center space-x-2">
+              <Button variant="ghost" onClick={() => navigate('/login')}>
+                Se connecter
+              </Button>
+              <Button onClick={() => navigate('/register')}>
+                S'inscrire
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 z-0"></div>
@@ -109,13 +193,13 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Video Tutorial Section */}
-      <section className="py-16 bg-white">
+      {/* Customer Experience Section */}
+      <section id="about" className="py-16 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold text-slate-900">Découvrez CPME Tool en action</h2>
             <p className="mt-4 text-lg text-slate-600">
-              Notre vidéo de démonstration vous montre comment automatiser votre processus de facturation en moins d'une minute.
+              Notre solution a déjà conquis des centaines de CPME à travers la France. Découvrez pourquoi.
             </p>
           </div>
           
@@ -125,13 +209,13 @@ const Index = () => {
             transition={{ duration: 0.7 }}
             viewport={{ once: true }}
           >
-            <IntroVideo />
+            <CustomerExperience />
           </motion.div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-slate-50">
+      <section id="features" className="py-20 bg-slate-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-slate-900">Simplifiez votre gestion documentaire</h2>
@@ -221,22 +305,87 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Subscription Plans Section */}
+      {/* Testimonials Section */}
       <section className="py-20 bg-slate-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-900">Ce que nos utilisateurs disent</h2>
+            <p className="mt-4 text-lg text-slate-600">
+              Découvrez l'expérience de nos utilisateurs avec CPME Tool
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1, duration: 0.5 }}
+                className="bg-white p-8 rounded-lg shadow-soft border border-slate-100"
+              >
+                <div className="flex mb-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star 
+                      key={i} 
+                      className={`h-5 w-5 ${i < testimonial.rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'}`} 
+                    />
+                  ))}
+                </div>
+                <p className="text-slate-600 mb-6 italic">"{testimonial.content}"</p>
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-cpme/10 flex items-center justify-center mr-3">
+                    <MessageCircle className="h-5 w-5 text-cpme" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-slate-900">{testimonial.name}</h4>
+                    <p className="text-sm text-slate-500">{testimonial.role}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Subscription Plans Section */}
+      <section id="pricing" className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-slate-900">Des licences adaptées à vos besoins</h2>
             <p className="mt-4 text-lg text-slate-600">
               Choisissez le forfait qui correspond à la taille de votre CPME
             </p>
+            
+            <div className="flex justify-center mt-8">
+              <div className="bg-slate-100 p-1 rounded-full inline-flex">
+                <button
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    billingCycle === 'monthly' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'
+                  }`}
+                  onClick={() => setBillingCycle('monthly')}
+                >
+                  Mensuel
+                </button>
+                <button
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    billingCycle === 'annual' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'
+                  }`}
+                  onClick={() => setBillingCycle('annual')}
+                >
+                  Annuel <span className="text-xs text-green-600 font-bold">-20%</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
                 title: "Licence Standard",
-                price: "49€",
-                period: "par mois",
+                price: billingCycle === 'monthly' ? prices.standard.monthly : prices.standard.annual / 12,
+                period: billingCycle === 'monthly' ? "par mois" : "par mois, facturé annuellement",
                 features: [
                   "Jusqu'à 3 utilisateurs",
                   "500 documents par mois",
@@ -246,8 +395,8 @@ const Index = () => {
               },
               {
                 title: "Licence Pro",
-                price: "99€",
-                period: "par mois",
+                price: billingCycle === 'monthly' ? prices.pro.monthly : prices.pro.annual / 12,
+                period: billingCycle === 'monthly' ? "par mois" : "par mois, facturé annuellement",
                 popular: true,
                 features: [
                   "Jusqu'à 10 utilisateurs",
@@ -258,8 +407,8 @@ const Index = () => {
               },
               {
                 title: "Licence Enterprise",
-                price: "199€",
-                period: "par mois",
+                price: billingCycle === 'monthly' ? prices.enterprise.monthly : prices.enterprise.annual / 12,
+                period: billingCycle === 'monthly' ? "par mois" : "par mois, facturé annuellement",
                 features: [
                   "Utilisateurs illimités",
                   "Documents illimités",
@@ -268,7 +417,14 @@ const Index = () => {
                 ]
               }
             ].map((plan, index) => (
-              <div key={index} className={`bg-white rounded-lg shadow-soft border ${plan.popular ? 'border-primary ring-2 ring-primary/20' : 'border-slate-100'} overflow-hidden`}>
+              <motion.div 
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1, duration: 0.5 }}
+                className={`bg-white rounded-lg shadow-soft border ${plan.popular ? 'border-primary ring-2 ring-primary/20' : 'border-slate-100'} overflow-hidden`}
+              >
                 {plan.popular && (
                   <div className="bg-primary text-white text-center py-1.5 text-sm font-medium">
                     Recommandé
@@ -277,7 +433,7 @@ const Index = () => {
                 <div className="p-8">
                   <h3 className="text-xl font-bold text-slate-900">{plan.title}</h3>
                   <div className="mt-4 flex items-baseline">
-                    <span className="text-4xl font-bold text-slate-900">{plan.price}</span>
+                    <span className="text-4xl font-bold text-slate-900">{formatPrice(plan.price)}</span>
                     <span className="ml-1 text-slate-500">{plan.period}</span>
                   </div>
                   <ul className="mt-6 space-y-4">
@@ -292,9 +448,15 @@ const Index = () => {
                     Sélectionner
                   </Button>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
+          
+          {billingCycle === 'annual' && (
+            <div className="text-center mt-8 text-sm text-slate-500">
+              * La facturation annuelle vous permet d'économiser 20% par rapport au tarif mensuel.
+            </div>
+          )}
         </div>
       </section>
 

@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { StarIcon, Users } from 'lucide-react';
 
-export const IntroVideo = () => {
+export const CustomerExperience = () => {
   return (
     <Card className="shadow-lg border-slate-200">
       <CardContent className="p-6">
