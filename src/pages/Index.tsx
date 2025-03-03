@@ -97,7 +97,7 @@ const Index = () => {
           <div className="flex justify-between items-center py-4">
             <Link to="/" className="flex items-center space-x-2">
               
-              <span className="tracking-tight text-inherit my-0 py-0 text-2xl font-bold mx-[5px] px-[23px]">CPME Tool</span>
+              <span className="tracking-tight my-0 py-0 text-2xl font-bold mx-[5px] px-[23px] text-[#0069da]">CPME Tool</span>
             </Link>
             
             <nav className="hidden md:flex items-center space-x-8">
