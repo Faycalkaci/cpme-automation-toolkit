@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
+import { DEFAULT_FIELD_MAPPINGS } from '@/services/pdfMappingService';
 
 interface FileUploaderProps {
   onFileUploaded: (data: any[], headers: string[]) => void;
@@ -22,6 +23,9 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
+  
+  // Get the required field names from DEFAULT_FIELD_MAPPINGS
+  const requiredHeaders = DEFAULT_FIELD_MAPPINGS.map(field => field.name);
   
   const processExcelFile = (file: File) => {
     setIsLoading(true);
@@ -48,12 +52,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         // Extract data rows (skip header row)
         const rows = jsonData.slice(1) as any[];
         
-        // Check for required CPME headers
-        const requiredHeaders = [
-          'DATE ECHEANCE', 'Cotisation', 'N° adh', 'SOCIETE', 
-          'Dirigeant', 'E MAIL 1', 'E Mail 2', 'Adresse', 'ville'
-        ];
-        
+        // Check for required field headers
         const missingHeaders = requiredHeaders.filter(header => 
           !headers.includes(header) && 
           !headers.includes(header.toLowerCase()) &&
@@ -110,12 +109,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       complete: (results) => {
         const headers = results.meta.fields || [];
         
-        // Check for required CPME headers
-        const requiredHeaders = [
-          'DATE ECHEANCE', 'Cotisation', 'N° adh', 'SOCIETE', 
-          'Dirigeant', 'E MAIL 1', 'E Mail 2', 'Adresse', 'ville'
-        ];
-        
+        // Check for required field headers
         const missingHeaders = requiredHeaders.filter(header => 
           !headers.includes(header) && 
           !headers.includes(header.toLowerCase()) &&
@@ -246,7 +240,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
             <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded w-full max-w-md">
               <p>Le fichier doit contenir les colonnes suivantes:</p>
               <div className="mt-1 flex flex-wrap gap-1">
-                {['DATE ECHEANCE', 'Cotisation', 'N° adh', 'SOCIETE', 'Dirigeant', 'E MAIL 1', 'E Mail 2', 'Adresse', 'ville'].map((column) => (
+                {requiredHeaders.map((column) => (
                   <span key={column} className="bg-slate-200 px-1 py-0.5 rounded text-slate-700">
                     {column}
                   </span>

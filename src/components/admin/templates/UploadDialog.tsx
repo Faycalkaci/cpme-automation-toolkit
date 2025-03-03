@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FileUp, X, Check, FileText, File } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { DEFAULT_FIELD_MAPPINGS } from '@/services/pdfMappingService';
 
 interface UploadDialogProps {
   open: boolean;
@@ -61,6 +62,9 @@ const UploadDialog: React.FC<UploadDialogProps> = ({
   
   // Icon basé sur le type de fichier
   const FileIcon = fileType === 'pdf' ? FileText : File;
+  
+  // Get the field names for display
+  const defaultFieldNames = DEFAULT_FIELD_MAPPINGS.map(field => field.name);
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -200,6 +204,21 @@ const UploadDialog: React.FC<UploadDialogProps> = ({
                 Type de fichier non reconnu. Veuillez utiliser un fichier PDF, DOC ou DOCX.
               </p>
             )}
+          </div>
+          
+          <div className="space-y-2 border-t pt-4">
+            <label className="text-sm font-medium">Champs mappés automatiquement</label>
+            <div className="flex flex-wrap gap-1 bg-slate-50 p-2 rounded">
+              {defaultFieldNames.map((field) => (
+                <div key={field} className="bg-slate-200 px-2 py-1 rounded text-xs text-slate-700 flex items-center">
+                  <Check className="h-3 w-3 mr-1 text-green-600" />
+                  {field}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-slate-500">
+              Ces champs seront automatiquement mappés avec votre fichier CSV/Excel importé.
+            </p>
           </div>
         </div>
         

@@ -29,10 +29,18 @@ export const pdfMappingService = {
       // Create mappings based on CSV headers that match our predefined fields
       const mappings = new Map<string, string>();
       
+      // Always include all default fields, regardless of detection
       DEFAULT_FIELD_MAPPINGS.forEach(field => {
-        if (csvHeaders.includes(field.name)) {
-          mappings.set(field.name, field.placeholder);
-        }
+        // Try to match with CSV headers using exact match or case-insensitive match
+        const matchingHeader = csvHeaders.find(header => 
+          header === field.name || 
+          header.toLowerCase() === field.name.toLowerCase() ||
+          header.normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 
+          field.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        );
+        
+        // Add to mappings - use the exact CSV header name if found, otherwise use the default field name
+        mappings.set(matchingHeader || field.name, field.placeholder);
       });
       
       return mappings;
@@ -117,13 +125,17 @@ export const pdfMappingService = {
   getTemplateMapping: async (templateId: string): Promise<Map<string, string>> => {
     try {
       const mappingsJson = localStorage.getItem(`template_mapping_${templateId}`);
-      if (!mappingsJson) return new Map();
+      if (!mappingsJson) {
+        // If no mapping exists, return default mappings
+        return new Map(DEFAULT_FIELD_MAPPINGS.map(field => [field.name, field.placeholder]));
+      }
       
       const mappingsObj = JSON.parse(mappingsJson);
       return new Map(Object.entries(mappingsObj));
     } catch (error) {
       console.error('Error retrieving template mapping:', error);
-      return new Map();
+      // Return default mappings on error
+      return new Map(DEFAULT_FIELD_MAPPINGS.map(field => [field.name, field.placeholder]));
     }
   }
 };
