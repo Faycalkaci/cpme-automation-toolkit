@@ -15,4 +15,6 @@ export type Template = {
   lastModified?: string;
   mappingConfig?: Record<string, string>;
   isPublic?: boolean;
+  // Added field for document type
+  documentType: 'pdf' | 'doc' | 'docx';
 };
