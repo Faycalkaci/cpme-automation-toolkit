@@ -22,6 +22,7 @@ import Users from "./pages/dashboard/Users";
 import Billing from "./pages/dashboard/Billing";
 import Licenses from "./pages/dashboard/Licenses";
 import Statistics from "./pages/dashboard/Statistics";
+import { FirebaseProvider } from "./contexts/FirebaseContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 // Protected route component
@@ -85,9 +86,11 @@ function AppRoutes() {
 function App() {
   return (
     <ThemeProvider defaultTheme="light" attribute="class">
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <FirebaseProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </FirebaseProvider>
     </ThemeProvider>
   );
 }

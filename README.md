@@ -1,69 +1,109 @@
-# Welcome to your Lovable project
 
-## Project info
+# CPME Tool - Architecture Optimisée
 
-**URL**: https://lovable.dev/projects/c2cb0f2b-0a2b-4525-a437-b3d6b653cc48
+Ce projet utilise une architecture optimisée avec Hostinger, Firebase et Stripe pour offrir une solution complète et scalable.
 
-## How can I edit this code?
+## Configuration de l'environnement
 
-There are several ways of editing your application.
+Pour que l'application fonctionne correctement, vous devez configurer les variables d'environnement suivantes :
 
-**Use Lovable**
+### Frontend (React)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/c2cb0f2b-0a2b-4525-a437-b3d6b653cc48) and start prompting.
+Créez un fichier `.env.local` à la racine du projet avec les variables suivantes :
 
-Changes made via Lovable will be committed automatically to this repo.
+```
+# Firebase
+VITE_FIREBASE_API_KEY=your-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-app.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-app
+VITE_FIREBASE_STORAGE_BUCKET=your-app.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
 
-**Use your preferred IDE**
+# Stripe
+VITE_STRIPE_PUBLIC_KEY=pk_test_your-public-key
+VITE_STRIPE_STANDARD_PLAN_ID=price_standard_id
+VITE_STRIPE_PRO_PLAN_ID=price_pro_id
+VITE_STRIPE_ENTERPRISE_PLAN_ID=price_enterprise_id
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# API Backend (Hostinger)
+VITE_API_URL=https://your-api.hostinger.fr
 ```
 
-**Edit a file directly in GitHub**
+### Backend (Hostinger)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Configurez les variables d'environnement suivantes sur votre serveur Hostinger :
 
-**Use GitHub Codespaces**
+```
+STRIPE_SECRET_KEY=sk_test_your-secret-key
+STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret
+FRONTEND_URL=https://your-frontend-url.com
+PORT=3000
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Guide de déploiement
 
-## What technologies are used for this project?
+### Frontend (React)
 
-This project is built with .
+1. Installez les dépendances et construisez l'application :
+   ```bash
+   npm install
+   npm run build
+   ```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+2. Déployez le contenu du dossier `dist` sur votre hébergement statique.
 
-## How can I deploy this project?
+### Backend (Node.js sur Hostinger)
 
-Simply open [Lovable](https://lovable.dev/projects/c2cb0f2b-0a2b-4525-a437-b3d6b653cc48) and click on Share -> Publish.
+1. Créez un hébergement Node.js sur Hostinger.
+2. Uploadez le contenu du dossier `server` dans le répertoire de votre application.
+3. Installez les dépendances :
+   ```bash
+   npm install express cors stripe
+   ```
+4. Configurez les variables d'environnement.
+5. Démarrez l'application :
+   ```bash
+   node index.js
+   ```
 
-## I want to use a custom domain - is that possible?
+### Firebase
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+1. Créez un projet Firebase à partir de la console Firebase.
+2. Activez les services suivants :
+   - Authentication (Email/Password et Google)
+   - Firestore Database
+   - Storage
+3. Configurez les règles de sécurité pour Firestore et Storage.
+4. Obtenez les informations d'identification et mettez à jour les variables d'environnement.
+
+### Stripe
+
+1. Créez un compte Stripe et configurez les produits et prix.
+2. Créez un webhook Stripe pointant vers `https://your-api.hostinger.fr/webhook`.
+3. Obtenez les clés API et mettez à jour les variables d'environnement.
+
+## Architecture du projet
+
+### Backend (Hostinger)
+- Héberge l'API REST pour les opérations Stripe
+- Gère les webhooks Stripe
+- Traite les événements d'abonnement et de paiement
+
+### Firebase
+- Authentication : Gère l'authentification des utilisateurs
+- Firestore : Stocke les données des utilisateurs, licences et logs
+- Storage : Stocke les fichiers PDF et autres documents
+
+### Stripe
+- Gère les abonnements et paiements
+- Traite les cartes de crédit
+- Fournit un portail client pour la gestion des abonnements
+
+## Maintenance et mise à jour
+
+Pour mettre à jour le système :
+
+1. Frontend : Mettez à jour le code source, reconstruisez et redéployez
+2. Backend : Mettez à jour les fichiers sur Hostinger et redémarrez le serveur
+3. Firebase/Stripe : Les mises à jour sont automatiques
