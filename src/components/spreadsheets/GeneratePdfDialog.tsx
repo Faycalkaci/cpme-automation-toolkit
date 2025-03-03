@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface Template {
   id: string;
@@ -29,6 +30,9 @@ const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
   setSelectedTemplate,
   templates
 }) => {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  
   const confirmGeneration = () => {
     if (!selectedTemplate) {
       toast.error('Sélection requise', {
@@ -45,15 +49,14 @@ const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
       });
     }
     
+    setIsGenerating(true);
+    setGenerationError(null);
+    
     toast.success('Génération en cours', {
       description: `${selectedRows.length} documents sont en cours de génération.`
     });
     
     setTimeout(() => {
-      toast.success('Génération terminée', {
-        description: `${selectedRows.length} documents ont été générés avec succès.`
-      });
-      
       try {
         const { jsPDF } = require('jspdf');
         const doc = new jsPDF();
@@ -72,14 +75,16 @@ const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
           
           if (templateObj && templateObj.mappingFields) {
             templateObj.mappingFields.forEach(field => {
-              if (row[field]) {
-                doc.text(`${field}: ${row[field]}`, 10, yPos);
-                yPos += 10;
-              }
+              // Check if the field exists in the row data (case insensitive)
+              const fieldValue = row[field] || findCaseInsensitiveField(row, field) || '-';
+              doc.setFontSize(12);
+              doc.text(`${field}: ${fieldValue}`, 10, yPos);
+              yPos += 10;
             });
           } else {
             Object.entries(row).forEach(([key, value]) => {
               if (value) {
+                doc.setFontSize(12);
                 doc.text(`${key}: ${value}`, 10, yPos);
                 yPos += 10;
               }
@@ -88,20 +93,40 @@ const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
         });
         
         doc.save(`${templateObj?.id || 'document'}_cpme.pdf`);
+        
+        setIsGenerating(false);
+        toast.success('Génération terminée', {
+          description: `${selectedRows.length} documents ont été générés avec succès.`
+        });
+        
+        onOpenChange(false);
       } catch (error) {
         console.error('Error generating PDF', error);
+        setGenerationError("Une erreur est survenue lors de la génération du PDF. Veuillez vérifier que toutes les données sont présentes.");
+        setIsGenerating(false);
         toast.error('Erreur de génération', {
           description: 'Une erreur est survenue lors de la génération du PDF.'
         });
       }
-      
-      onOpenChange(false);
     }, 1000);
+  };
+  
+  // Helper function to find field values case-insensitively
+  const findCaseInsensitiveField = (row: any, fieldName: string): string | undefined => {
+    const lowerFieldName = fieldName.toLowerCase();
+    
+    for (const [key, value] of Object.entries(row)) {
+      if (key.toLowerCase() === lowerFieldName) {
+        return value as string;
+      }
+    }
+    
+    return undefined;
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Générer des documents PDF</DialogTitle>
           <DialogDescription>
@@ -144,16 +169,27 @@ const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
                 </div>
               </div>
             )}
+            
+            {generationError && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertTitle>Erreur de génération</AlertTitle>
+                <AlertDescription>{generationError}</AlertDescription>
+              </Alert>
+            )}
           </div>
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating}>
             Annuler
           </Button>
-          <Button onClick={confirmGeneration} disabled={!selectedTemplate}>
+          <Button 
+            onClick={confirmGeneration} 
+            disabled={!selectedTemplate || isGenerating}
+            className={isGenerating ? "opacity-80" : ""}
+          >
             <FileText className="mr-2 h-4 w-4" />
-            Générer
+            {isGenerating ? "Génération en cours..." : "Générer"}
           </Button>
         </DialogFooter>
       </DialogContent>

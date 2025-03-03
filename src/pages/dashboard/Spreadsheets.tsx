@@ -26,6 +26,7 @@ const Spreadsheets = () => {
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const { templates, selectedTemplate, setSelectedTemplate } = useSpreadsheetTemplates();
   
@@ -40,11 +41,25 @@ const Spreadsheets = () => {
   };
   
   const handleGeneratePdf = (rows: any[]) => {
+    if (rows.length === 0) {
+      toast.error('Aucune ligne sélectionnée', {
+        description: 'Veuillez sélectionner au moins une ligne pour générer un PDF.'
+      });
+      return;
+    }
+    
     setSelectedRows(rows);
     setShowGenerateDialog(true);
   };
   
   const handleSendEmail = (rows: any[]) => {
+    if (rows.length === 0) {
+      toast.error('Aucune ligne sélectionnée', {
+        description: 'Veuillez sélectionner au moins une ligne pour envoyer un email.'
+      });
+      return;
+    }
+    
     setSelectedRows(rows);
     
     if (!validateEmailFields(rows)) {
@@ -55,11 +70,25 @@ const Spreadsheets = () => {
   };
   
   const handleExport = () => {
+    setIsProcessing(true);
+    
     toast.success('Export en cours', {
       description: `${data.length} lignes sont en cours d'exportation.`
     });
     
-    exportToCSV(data, headers);
+    try {
+      exportToCSV(data, headers);
+      toast.success('Export terminé', {
+        description: `${data.length} lignes ont été exportées avec succès.`
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Erreur d\'export', {
+        description: 'Une erreur est survenue lors de l\'exportation des données.'
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
   
   return (
@@ -104,6 +133,7 @@ const Spreadsheets = () => {
                 onGeneratePdf={handleGeneratePdf}
                 onSendEmail={handleSendEmail}
                 onExport={handleExport}
+                isProcessing={isProcessing}
               />
               <DataTable 
                 data={data} 
