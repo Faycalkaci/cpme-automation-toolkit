@@ -9,19 +9,26 @@ export interface Product {
 
 export interface License {
   id: string;
-  key: string;
+  key?: string;
   status: 'active' | 'expired' | 'pending' | 'revoked';
-  userId: string;
-  userName: string;
-  productId: string;
-  productName: string;
-  createdAt: string;
-  expiresAt: string;
-  seats: number;
-  usedSeats: number;
-  plan: 'basic' | 'premium' | 'enterprise';
-  autoRenew: boolean;
-  stripeSubscriptionId?: string;  // Added this property to fix build errors
+  userId?: string;
+  userName?: string;
+  productId?: string;
+  productName?: string;
+  createdAt?: string;
+  expiresAt?: string;
+  seats?: number;
+  usedSeats?: number;
+  plan: 'basic' | 'premium' | 'enterprise' | 'standard' | 'pro';
+  autoRenew?: boolean;
+  stripeSubscriptionId?: string;
+  
+  // Additional properties used in components
+  cpme?: string;
+  users?: number;
+  maxUsers?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface User {

@@ -41,7 +41,7 @@ const LicenseCard: React.FC<LicenseCardProps> = ({ license, onRenew, onSuspend }
           <div className="flex items-center text-sm">
             <Calendar className="h-4 w-4 mr-2 text-slate-500" />
             <span>
-              Expire le {new Date(license.endDate).toLocaleDateString('fr-FR')}
+              Expire le {new Date(license.endDate || '').toLocaleDateString('fr-FR')}
             </span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-2">
@@ -52,7 +52,7 @@ const LicenseCard: React.FC<LicenseCardProps> = ({ license, onRenew, onSuspend }
                   : 'bg-primary'
               }`}
               style={{ 
-                width: `${Math.min(100, (license.users / license.maxUsers) * 100)}%` 
+                width: `${Math.min(100, ((license.users || 0) / (license.maxUsers || 1)) * 100)}%` 
               }}
             ></div>
           </div>

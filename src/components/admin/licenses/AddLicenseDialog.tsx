@@ -19,7 +19,7 @@ const AddLicenseDialog: React.FC<AddLicenseDialogProps> = ({
 }) => {
   const [newLicense, setNewLicense] = useState<Partial<License>>({
     cpme: '',
-    plan: 'standard',
+    plan: 'standard' as License['plan'],
     maxUsers: 1,
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
@@ -28,7 +28,7 @@ const AddLicenseDialog: React.FC<AddLicenseDialogProps> = ({
   const handleAddLicense = () => {
     onAddLicense({
       cpme: newLicense.cpme || '',
-      plan: newLicense.plan as 'standard' | 'pro' | 'enterprise',
+      plan: newLicense.plan as License['plan'],
       maxUsers: newLicense.maxUsers || 1,
       startDate: newLicense.startDate || new Date().toISOString().split('T')[0],
       endDate: newLicense.endDate || new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
@@ -37,7 +37,7 @@ const AddLicenseDialog: React.FC<AddLicenseDialogProps> = ({
     // Reset form
     setNewLicense({
       cpme: '',
-      plan: 'standard',
+      plan: 'standard' as License['plan'],
       maxUsers: 1,
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
@@ -75,7 +75,7 @@ const AddLicenseDialog: React.FC<AddLicenseDialogProps> = ({
             </label>
             <Select
               value={newLicense.plan}
-              onValueChange={(value: 'standard' | 'pro' | 'enterprise') => 
+              onValueChange={(value: License['plan']) => 
                 setNewLicense({
                   ...newLicense, 
                   plan: value,

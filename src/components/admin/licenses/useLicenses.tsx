@@ -5,8 +5,17 @@ import { License } from './types';
 import { firestoreService } from '@/services/firebase/firestoreService';
 import { stripeService, PLANS } from '@/services/stripe/stripeService';
 
+// Adding this type to accommodate the existing structure
+type ExtendedLicense = License & {
+  users?: number;
+  maxUsers?: number;
+  cpme?: string;
+  startDate?: string;
+  endDate?: string;
+};
+
 export const useLicenses = () => {
-  const [licenses, setLicenses] = useState<License[]>([]);
+  const [licenses, setLicenses] = useState<ExtendedLicense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Charger les licences depuis Firestore
@@ -17,10 +26,10 @@ export const useLicenses = () => {
         const firebaseLicenses = await firestoreService.licenses.getAll();
         
         // Convertir du format Firestore au format de notre application
-        const formattedLicenses: License[] = firebaseLicenses.map(license => ({
+        const formattedLicenses: ExtendedLicense[] = firebaseLicenses.map(license => ({
           id: license.id || '',
           cpme: license.cpme,
-          plan: license.plan,
+          plan: license.plan as License['plan'],
           status: license.status,
           users: license.users,
           maxUsers: license.maxUsers,
@@ -48,7 +57,7 @@ export const useLicenses = () => {
           {
             id: '2',
             cpme: 'CPME Paris (75)',
-            plan: 'pro',
+            plan: 'pro' as License['plan'],
             status: 'active',
             users: 1,
             maxUsers: 1,
@@ -58,7 +67,7 @@ export const useLicenses = () => {
           {
             id: '3',
             cpme: 'CPME Val-de-Marne (94)',
-            plan: 'standard',
+            plan: 'standard' as License['plan'],
             status: 'expired',
             users: 1,
             maxUsers: 1,
@@ -68,7 +77,7 @@ export const useLicenses = () => {
           {
             id: '4',
             cpme: 'CPME Hauts-de-Seine (92)',
-            plan: 'pro',
+            plan: 'pro' as License['plan'],
             status: 'pending',
             users: 0,
             maxUsers: 1,
@@ -84,7 +93,7 @@ export const useLicenses = () => {
     fetchLicenses();
   }, []);
 
-  const addLicense = async (license: Omit<License, 'id' | 'status' | 'users'>) => {
+  const addLicense = async (license: Omit<ExtendedLicense, 'id' | 'status' | 'users'>) => {
     try {
       // Update max users based on plan
       let maxUsers = 1; // Default for standard and pro
@@ -92,7 +101,7 @@ export const useLicenses = () => {
         maxUsers = 3;
       }
       
-      const newLicense: Omit<License, 'id'> = {
+      const newLicense: Omit<ExtendedLicense, 'id'> = {
         cpme: license.cpme,
         plan: license.plan,
         status: 'active',
@@ -144,7 +153,7 @@ export const useLicenses = () => {
       }
       
       // Calculer la nouvelle date de fin (un an de plus)
-      const newEndDate = new Date(new Date(licenseToRenew.endDate).setFullYear(new Date(licenseToRenew.endDate).getFullYear() + 1)).toISOString().split('T')[0];
+      const newEndDate = new Date(new Date(licenseToRenew.endDate || '').setFullYear(new Date(licenseToRenew.endDate || '').getFullYear() + 1)).toISOString().split('T')[0];
       
       // Mettre à jour dans Firestore
       await firestoreService.licenses.update(licenseId, {
