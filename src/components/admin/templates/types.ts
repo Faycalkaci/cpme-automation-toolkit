@@ -3,6 +3,7 @@ export type Template = {
   id: string;
   name: string;
   type: 'facture' | 'appel' | 'rappel' | 'autre';
+  documentType: 'pdf' | 'doc' | 'docx'; // Add document type field
   date: string;
   fields: string[];
   fileUrl: string;

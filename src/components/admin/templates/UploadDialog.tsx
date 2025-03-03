@@ -1,9 +1,11 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileUp, X, Check } from 'lucide-react';
+import { FileUp, FileText, File, X, Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { documentProcessingService } from '@/services/documentProcessingService';
+import { toast } from 'sonner';
 
 interface UploadDialogProps {
   open: boolean;
@@ -37,11 +39,55 @@ const UploadDialog: React.FC<UploadDialogProps> = ({
   handleDrop,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [detectedFields, setDetectedFields] = useState<string[]>([]);
 
   const browseFiles = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
+  };
+
+  const analyzeFile = async () => {
+    if (!selectedFile) return;
+    
+    setIsAnalyzing(true);
+    try {
+      const fileBuffer = await selectedFile.arrayBuffer();
+      const documentFields = await documentProcessingService.detectFields(
+        fileBuffer, 
+        selectedFile.type
+      );
+      
+      const fieldNames = documentFields.map(field => field.name);
+      setDetectedFields(fieldNames);
+      
+      if (fieldNames.length > 0) {
+        toast.success(`${fieldNames.length} champs détectés automatiquement`);
+      } else {
+        toast.info('Aucun champ détecté automatiquement');
+      }
+    } catch (error) {
+      console.error('Error analyzing file:', error);
+      toast.error('Erreur lors de l\'analyse du fichier');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const getFileIcon = () => {
+    if (!selectedFile) return <FileUp className="h-8 w-8 mx-auto text-slate-400" />;
+    
+    if (selectedFile.type === 'application/pdf') {
+      return <FileText className="h-8 w-8 mx-auto text-red-500" />;
+    } else if (
+      selectedFile.type === 'application/msword' || 
+      selectedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      return <File className="h-8 w-8 mx-auto text-blue-500" />;
+    }
+    
+    return <FileUp className="h-8 w-8 mx-auto text-slate-400" />;
   };
 
   return (
@@ -50,7 +96,7 @@ const UploadDialog: React.FC<UploadDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Ajouter un nouveau modèle</DialogTitle>
           <DialogDescription>
-            Téléchargez un fichier PDF qui servira de modèle pour la génération de documents.
+            Téléchargez un fichier PDF ou DOC qui servira de modèle pour la génération de documents.
           </DialogDescription>
         </DialogHeader>
         
@@ -107,7 +153,7 @@ const UploadDialog: React.FC<UploadDialogProps> = ({
           
           <div className="space-y-2">
             <label htmlFor="template-file" className="text-sm font-medium">
-              Fichier PDF
+              Fichier (PDF, DOC ou DOCX)
             </label>
             <div 
               className={`border-2 border-dashed rounded-lg p-4 transition-colors ${
@@ -120,29 +166,54 @@ const UploadDialog: React.FC<UploadDialogProps> = ({
               <div className="text-center">
                 {selectedFile ? (
                   <>
-                    <Check className="h-8 w-8 mx-auto text-green-500" />
+                    {getFileIcon()}
                     <p className="mt-2 text-sm font-medium text-green-700">
                       {selectedFile.name}
                     </p>
                     <p className="text-xs text-green-600 mt-1">
                       {Math.round(selectedFile.size / 1024)} Ko
                     </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => setSelectedFile(null)}
-                    >
-                      <X className="h-3 w-3 mr-1" />
-                      Supprimer
-                    </Button>
+                    <div className="flex justify-center mt-2 space-x-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedFile(null);
+                          setDetectedFields([]);
+                        }}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Supprimer
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          analyzeFile();
+                        }}
+                        disabled={isAnalyzing}
+                      >
+                        {isAnalyzing ? (
+                          <div className="h-3 w-3 mr-1 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                        ) : (
+                          <Check className="h-3 w-3 mr-1" />
+                        )}
+                        Analyser
+                      </Button>
+                    </div>
                   </>
                 ) : (
                   <>
                     <FileUp className="h-8 w-8 mx-auto text-slate-400" />
                     <p className="mt-2 text-sm text-slate-600">
-                      Glissez-déposez votre fichier PDF ici ou cliquez pour parcourir
+                      Glissez-déposez votre fichier ici ou cliquez pour parcourir
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Formats acceptés: PDF, DOC, DOCX
                     </p>
                     <Button
                       type="button"
@@ -157,7 +228,7 @@ const UploadDialog: React.FC<UploadDialogProps> = ({
                       ref={fileInputRef}
                       id="template-file" 
                       type="file" 
-                      accept=".pdf" 
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
                       className="hidden"
                       onChange={handleFileSelect}
                     />
@@ -166,12 +237,28 @@ const UploadDialog: React.FC<UploadDialogProps> = ({
               </div>
             </div>
           </div>
+          
+          {detectedFields.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Champs détectés</label>
+              <div className="border rounded-md p-3 bg-slate-50">
+                <div className="flex flex-wrap gap-2">
+                  {detectedFields.map((field, index) => (
+                    <div key={index} className="bg-white border px-2 py-1 rounded-md text-xs">
+                      {field}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         
         <DialogFooter>
           <Button variant="outline" onClick={() => {
             onOpenChange(false);
             setSelectedFile(null);
+            setDetectedFields([]);
           }}>
             Annuler
           </Button>
