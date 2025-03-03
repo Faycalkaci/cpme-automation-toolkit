@@ -1,0 +1,47 @@
+
+@layer utilities {
+  .glass {
+    @apply bg-white/40 backdrop-blur-md border border-white/30 shadow-glass;
+  }
+  
+  .glass-dark {
+    @apply bg-black/30 backdrop-blur-md border border-white/10 shadow-glass;
+  }
+  
+  .page-container {
+    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
+  }
+  
+  .transition-all-smooth {
+    @apply transition-all duration-300 ease-in-out;
+  }
+  
+  .focusable {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+  
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-cpme-dark via-cpme-light to-cpme-dark;
+  }
+  
+  .elevated-card {
+    @apply bg-white border border-slate-100 shadow-soft rounded-xl hover:shadow-md transition-all duration-200;
+  }
+  
+  .icon-container {
+    @apply h-10 w-10 rounded-full flex items-center justify-center;
+  }
+  
+  .blue-gradient-bg {
+    @apply bg-blue-gradient;
+  }
+  
+  .shimmer {
+    @apply relative overflow-hidden;
+  }
+  
+  .shimmer::after {
+    content: '';
+    @apply absolute top-0 left-0 w-full h-full bg-gradient-shine bg-[length:200%_100%] animate-shine;
+  }
+}
