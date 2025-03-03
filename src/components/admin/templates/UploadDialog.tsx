@@ -2,7 +2,7 @@
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileUp, X, Check, FileText, FileWord } from 'lucide-react';
+import { FileUp, X, Check, FileText, File } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 interface UploadDialogProps {
@@ -60,7 +60,7 @@ const UploadDialog: React.FC<UploadDialogProps> = ({
   const fileType = getFileType(selectedFile);
   
   // Icon basé sur le type de fichier
-  const FileIcon = fileType === 'pdf' ? FileText : FileWord;
+  const FileIcon = fileType === 'pdf' ? FileText : File;
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

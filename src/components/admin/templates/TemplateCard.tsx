@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Eye, Trash2, Check, FileWord, Download } from 'lucide-react';
+import { FileText, Eye, Trash2, Check, File, Download } from 'lucide-react';
 import { Template } from './types';
 
 interface TemplateCardProps {
@@ -21,7 +21,7 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
   openSaveDialog,
 }) => {
   // Détermine l'icône du document en fonction de son type
-  const DocumentIcon = template.documentType === 'pdf' ? FileText : FileWord;
+  const DocumentIcon = template.documentType === 'pdf' ? FileText : File;
   
   return (
     <Card className={`overflow-hidden ${template.permanent ? 'border-primary/40' : ''}`}>

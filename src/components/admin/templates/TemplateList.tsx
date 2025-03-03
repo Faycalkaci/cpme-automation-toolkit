@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import TemplateCard from './TemplateCard';
 import { Template } from './types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, FileWord, Filter } from 'lucide-react';
+import { FileText, File, Filter, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -26,9 +25,7 @@ const TemplateList: React.FC<TemplateListProps> = ({
   const [activeTab, setActiveTab] = useState<'all' | 'pdf' | 'word'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   
-  // Filtre les templates en fonction de l'onglet actif et du filtre de type
   const filteredTemplates = templates.filter(template => {
-    // Filtre par type de document
     if (activeTab === 'pdf' && template.documentType !== 'pdf') {
       return false;
     }
@@ -36,7 +33,6 @@ const TemplateList: React.FC<TemplateListProps> = ({
       return false;
     }
     
-    // Filtre par type de template
     if (typeFilter !== 'all' && template.type !== typeFilter) {
       return false;
     }
@@ -59,7 +55,7 @@ const TemplateList: React.FC<TemplateListProps> = ({
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="word" className="flex items-center">
-              <FileWord className="h-4 w-4 mr-1" /> Word
+              <File className="h-4 w-4 mr-1" /> Word
               <Badge variant="outline" className="ml-2">
                 {templates.filter(t => ['doc', 'docx'].includes(t.documentType || '')).length}
               </Badge>
@@ -95,7 +91,7 @@ const TemplateList: React.FC<TemplateListProps> = ({
             {activeTab === 'pdf' ? (
               <FileText className="h-6 w-6 text-slate-400" />
             ) : activeTab === 'word' ? (
-              <FileWord className="h-6 w-6 text-slate-400" />
+              <File className="h-6 w-6 text-slate-400" />
             ) : (
               <Filter className="h-6 w-6 text-slate-400" />
             )}
