@@ -1,11 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Download, FileText, Mail, X, CheckSquare, Square } from 'lucide-react';
 import { toast } from 'sonner';
-import { jsPDF } from 'jspdf';
+
+// Import refactored components
+import TableSearch from './TableSearch';
+import TableSelectionControls from './TableSelectionControls';
+import TableActions from './TableActions';
+import TableFooter from './TableFooter';
+
+// Import utility functions
+import { generateAndDownloadPdf, validateRequiredFields } from '@/utils/pdfUtils';
+import { getValidEmailsFromData, displayEmailResults, displayEmailAddresses } from '@/utils/emailUtils';
+import { exportToCsv } from '@/utils/exportUtils';
 
 interface DataTableProps {
   data: any[];
@@ -42,10 +50,6 @@ const DataTable: React.FC<DataTableProps> = ({
     }
   }, [data, searchTerm]);
   
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-  
   const toggleRowSelection = (index: number) => {
     setSelectedRows(prev => ({
       ...prev,
@@ -81,84 +85,16 @@ const DataTable: React.FC<DataTableProps> = ({
       return;
     }
     
-    const requiredFields = ['SOCIETE', 'N° adh', 'Cotisation'];
-    const missingFields = selectedData.some(row => 
-      requiredFields.some(field => !row[field] && !row[field.toLowerCase()])
-    );
+    const hasMissingFields = validateRequiredFields(selectedData);
     
-    if (missingFields) {
+    if (hasMissingFields) {
       toast.warning("Données incomplètes", { 
         description: "Certaines lignes sélectionnées n'ont pas toutes les données requises (SOCIETE, N° adh, Cotisation)." 
       });
     }
     
     onGeneratePdf(selectedData);
-    
-    generateAndDownloadPdf(selectedData);
-  };
-  
-  const generateAndDownloadPdf = (data: any[]) => {
-    try {
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      
-      doc.setFontSize(18);
-      doc.text('Données exportées', pageWidth / 2, 15, { align: 'center' });
-      
-      doc.setFontSize(10);
-      doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 22, { align: 'center' });
-      
-      const maxColumnWidth = 25;
-      let columnWidths: number[] = [];
-      let startX = 10;
-      const startY = 30;
-      const rowHeight = 10;
-      
-      headers.forEach((header, index) => {
-        const width = Math.min(header.length * 2 + 6, maxColumnWidth);
-        columnWidths.push(width);
-        
-        doc.rect(startX, startY, width, rowHeight, 'FD');
-        doc.text(header, startX + 2, startY + 6);
-        
-        startX += width;
-      });
-      
-      data.forEach((row, rowIndex) => {
-        const y = startY + (rowIndex + 1) * rowHeight;
-        
-        if (y + rowHeight > doc.internal.pageSize.getHeight() - 10) {
-          doc.addPage();
-          return;
-        }
-        
-        let x = 10;
-        
-        headers.forEach((header, colIndex) => {
-          const width = columnWidths[colIndex];
-          const value = String(row[header] || '');
-          
-          doc.setDrawColor(200, 200, 200);
-          doc.rect(x, y, width, rowHeight);
-          
-          const truncatedValue = value.length > width / 2 ? value.substring(0, Math.floor(width / 2)) + '...' : value;
-          doc.text(truncatedValue, x + 2, y + 6);
-          
-          x += width;
-        });
-      });
-      
-      doc.save('donnees_exportees.pdf');
-      
-      toast.success("PDF généré et téléchargé", { 
-        description: `${data.length} lignes exportées au format PDF.` 
-      });
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error("Erreur lors de la génération du PDF", { 
-        description: "Une erreur est survenue pendant la génération du PDF." 
-      });
-    }
+    generateAndDownloadPdf(selectedData, headers);
   };
   
   const handleSendEmail = () => {
@@ -170,150 +106,42 @@ const DataTable: React.FC<DataTableProps> = ({
       return;
     }
     
-    const validateEmail = (email: string) => {
-      return String(email)
-        .toLowerCase()
-        .match(
-          /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-        );
-    };
+    const emailData = getValidEmailsFromData(selectedData);
+    const isValid = displayEmailResults(emailData);
     
-    const emailsByRow = selectedData.map(row => {
-      const validEmails = [];
-      if (row['E MAIL 1'] && validateEmail(row['E MAIL 1'])) {
-        validEmails.push(row['E MAIL 1']);
-      }
-      if (row['E Mail 2'] && validateEmail(row['E Mail 2'])) {
-        validEmails.push(row['E Mail 2']);
-      }
-      return {
-        row,
-        emails: validEmails
-      };
-    });
-    
-    const rowsWithNoEmails = emailsByRow.filter(item => item.emails.length === 0);
-    const totalEmailCount = emailsByRow.reduce((sum, item) => sum + item.emails.length, 0);
-    
-    if (totalEmailCount === 0) {
-      toast.error("Adresses email manquantes", { 
-        description: "Aucune adresse email valide n'a été trouvée dans les colonnes 'E MAIL 1' ou 'E Mail 2'." 
-      });
-      return;
-    }
-    
-    if (rowsWithNoEmails.length > 0) {
-      toast.warning("Emails manquants", { 
-        description: `${rowsWithNoEmails.length} ligne(s) n'ont pas d'adresse email valide.` 
-      });
-    }
+    if (!isValid) return;
     
     onSendEmail(selectedData);
     
-    const allValidEmails = emailsByRow.flatMap(item => item.emails);
-    
-    if (allValidEmails.length > 0) {
-      toast.info(`Adresses email détectées (${allValidEmails.length})`, {
-        description: allValidEmails.length > 3 
-          ? `${allValidEmails.slice(0, 3).join(', ')} et ${allValidEmails.length - 3} autres adresses`
-          : allValidEmails.join(', ')
-      });
-    }
+    const allValidEmails = emailData.emailsByRow.flatMap(item => item.emails);
+    displayEmailAddresses(allValidEmails);
   };
   
   const handleExportCsv = () => {
     const selectedData = getSelectedRowsData();
-    if (selectedData.length === 0) {
-      toast.error("Sélection vide", { 
-        description: "Veuillez sélectionner au moins une ligne pour exporter." 
-      });
-      return;
-    }
-    
-    const csvContent = [
-      headers.join(','),
-      ...selectedData.map(row => 
-        headers.map(header => {
-          const value = row[header] || '';
-          return `"${String(value).replace(/"/g, '""')}"`; 
-        }).join(',')
-      )
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'exported_data.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast.success("Export réussi", { 
-      description: `${selectedData.length} lignes exportées au format CSV.` 
-    });
+    exportToCsv(selectedData, headers);
   };
   
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-          <Input
-            placeholder="Rechercher..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            className="pl-10"
-          />
-          {searchTerm && (
-            <button 
-              onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
+        <TableSearch 
+          searchTerm={searchTerm} 
+          setSearchTerm={setSearchTerm} 
+        />
         
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={toggleSelectAll}
-            className="flex-shrink-0"
-          >
-            {allSelected ? <CheckSquare className="mr-2 h-4 w-4" /> : <Square className="mr-2 h-4 w-4" />}
-            {allSelected ? 'Désélectionner tout' : 'Sélectionner tout'}
-          </Button>
+          <TableSelectionControls 
+            allSelected={allSelected} 
+            toggleSelectAll={toggleSelectAll}
+          />
           
-          <Button 
-            onClick={handleGeneratePdf}
-            disabled={selectedCount === 0}
-            className="flex-shrink-0"
-          >
-            <FileText className="mr-2 h-4 w-4" />
-            Générer PDF
-          </Button>
-          
-          <Button 
-            onClick={handleSendEmail}
-            disabled={selectedCount === 0}
-            className="flex-shrink-0"
-            variant="outline"
-          >
-            <Mail className="mr-2 h-4 w-4" />
-            Envoyer email
-          </Button>
-          
-          <Button 
-            onClick={handleExportCsv}
-            disabled={selectedCount === 0}
-            className="flex-shrink-0"
-            variant="outline"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Exporter
-          </Button>
+          <TableActions 
+            selectedCount={selectedCount}
+            onGeneratePdf={handleGeneratePdf}
+            onSendEmail={handleSendEmail}
+            onExportCsv={handleExportCsv}
+          />
         </div>
       </div>
       
@@ -361,40 +189,14 @@ const DataTable: React.FC<DataTableProps> = ({
       </div>
       
       {filteredData.length > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <p className="text-sm text-slate-500">
-            {filteredData.length} résultats sur {data.length} {data.length > 1 ? 'adhérents' : 'adhérent'}
-          </p>
-          
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleGeneratePdf}
-              disabled={selectedCount === 0}
-              className="flex-shrink-0"
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              Générer PDF ({selectedCount})
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={handleSendEmail}
-              disabled={selectedCount === 0}
-              className="flex-shrink-0"
-            >
-              <Mail className="mr-2 h-4 w-4" />
-              Envoyer par email
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={handleExportCsv}
-              disabled={selectedCount === 0}
-              className="flex-shrink-0"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Exporter
-            </Button>
-          </div>
-        </div>
+        <TableFooter 
+          totalCount={data.length}
+          filteredCount={filteredData.length}
+          selectedCount={selectedCount}
+          onGeneratePdf={handleGeneratePdf}
+          onSendEmail={handleSendEmail}
+          onExportCsv={handleExportCsv}
+        />
       )}
     </div>
   );
