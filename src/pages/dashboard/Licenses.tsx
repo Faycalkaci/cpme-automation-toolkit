@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ShieldCheck } from 'lucide-react';
 import LicenseManager from '@/components/admin/LicenseManager';
 
