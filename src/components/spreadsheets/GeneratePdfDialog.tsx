@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { jsPDF } from 'jspdf';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -58,7 +59,6 @@ const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
     
     setTimeout(() => {
       try {
-        const { jsPDF } = require('jspdf');
         const doc = new jsPDF();
         
         doc.setFontSize(16);
