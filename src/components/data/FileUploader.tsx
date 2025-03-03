@@ -9,9 +9,17 @@ import { toast } from 'sonner';
 
 interface FileUploaderProps {
   onFileUploaded: (data: any[], headers: string[]) => void;
+  allowedFileTypes?: string[];
+  maxFileSize?: number;
+  onError?: (error: string) => void;
 }
 
-const FileUploader: React.FC<FileUploaderProps> = ({ onFileUploaded }) => {
+const FileUploader: React.FC<FileUploaderProps> = ({ 
+  onFileUploaded,
+  allowedFileTypes = ['.csv', '.xlsx', '.xls'],
+  maxFileSize = 10 * 1024 * 1024, // 10MB default limit
+  onError
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   
@@ -28,9 +36,9 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUploaded }) => {
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
         
         if (jsonData.length < 2) {
-          toast.error("Fichier invalide", {
-            description: "Le fichier ne contient pas suffisamment de données."
-          });
+          const errorMsg = "Le fichier ne contient pas suffisamment de données.";
+          toast.error("Fichier invalide", { description: errorMsg });
+          onError?.(errorMsg);
           setIsLoading(false);
           return;
         }
@@ -39,6 +47,25 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUploaded }) => {
         const headers = jsonData[0] as string[];
         // Extract data rows (skip header row)
         const rows = jsonData.slice(1) as any[];
+        
+        // Check for required CPME headers
+        const requiredHeaders = [
+          'DATE ECHEANCE', 'Cotisation', 'N° adh', 'SOCIETE', 
+          'Dirigeant', 'E MAIL 1', 'E Mail 2', 'Adresse', 'ville'
+        ];
+        
+        const missingHeaders = requiredHeaders.filter(header => 
+          !headers.includes(header) && 
+          !headers.includes(header.toLowerCase()) &&
+          !headers.some(h => h.normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 
+                          header.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))
+        );
+        
+        if (missingHeaders.length > 0) {
+          toast.warning("Colonnes manquantes", {
+            description: `Les colonnes suivantes sont recommandées mais manquantes: ${missingHeaders.join(', ')}`
+          });
+        }
         
         // Convert rows to objects with headers as keys
         const formattedData = rows.map(row => {
@@ -50,20 +77,25 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUploaded }) => {
         });
         
         onFileUploaded(formattedData, headers);
+        
+        toast.success("Fichier traité avec succès", {
+          description: `${formattedData.length} lignes importées.`
+        });
+        
         setIsLoading(false);
       } catch (error) {
         console.error("Error processing Excel file:", error);
-        toast.error("Erreur de traitement", {
-          description: "Impossible de traiter ce fichier Excel. Vérifiez son format."
-        });
+        const errorMsg = "Impossible de traiter ce fichier Excel. Vérifiez son format.";
+        toast.error("Erreur de traitement", { description: errorMsg });
+        onError?.(errorMsg);
         setIsLoading(false);
       }
     };
     
     reader.onerror = () => {
-      toast.error("Erreur de lecture", {
-        description: "Impossible de lire ce fichier. Veuillez réessayer."
-      });
+      const errorMsg = "Impossible de lire ce fichier. Veuillez réessayer.";
+      toast.error("Erreur de lecture", { description: errorMsg });
+      onError?.(errorMsg);
       setIsLoading(false);
     };
     
@@ -77,14 +109,39 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUploaded }) => {
       header: true,
       complete: (results) => {
         const headers = results.meta.fields || [];
+        
+        // Check for required CPME headers
+        const requiredHeaders = [
+          'DATE ECHEANCE', 'Cotisation', 'N° adh', 'SOCIETE', 
+          'Dirigeant', 'E MAIL 1', 'E Mail 2', 'Adresse', 'ville'
+        ];
+        
+        const missingHeaders = requiredHeaders.filter(header => 
+          !headers.includes(header) && 
+          !headers.includes(header.toLowerCase()) &&
+          !headers.some(h => h.normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 
+                          header.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))
+        );
+        
+        if (missingHeaders.length > 0) {
+          toast.warning("Colonnes manquantes", {
+            description: `Les colonnes suivantes sont recommandées mais manquantes: ${missingHeaders.join(', ')}`
+          });
+        }
+        
         onFileUploaded(results.data, headers);
+        
+        toast.success("Fichier traité avec succès", {
+          description: `${results.data.length} lignes importées.`
+        });
+        
         setIsLoading(false);
       },
       error: (error) => {
-        toast.error("Erreur de traitement", {
-          description: "Impossible de traiter ce fichier CSV. Vérifiez son format."
-        });
         console.error("CSV parse error:", error);
+        const errorMsg = "Impossible de traiter ce fichier CSV. Vérifiez son format.";
+        toast.error("Erreur de traitement", { description: errorMsg });
+        onError?.(errorMsg);
         setIsLoading(false);
       }
     });
@@ -94,25 +151,34 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUploaded }) => {
     setIsDragActive(false);
     
     if (acceptedFiles.length === 0) {
-      toast.error("Type de fichier non supporté", {
-        description: "Veuillez importer un fichier Excel (.xlsx, .xls) ou CSV."
-      });
+      const errorMsg = "Veuillez importer un fichier Excel (.xlsx, .xls) ou CSV.";
+      toast.error("Type de fichier non supporté", { description: errorMsg });
+      onError?.(errorMsg);
       return;
     }
     
     const file = acceptedFiles[0];
+    
+    // Check file size
+    if (file.size > maxFileSize) {
+      const maxSizeMB = Math.round(maxFileSize / (1024 * 1024));
+      const errorMsg = `Le fichier est trop volumineux. La taille maximale est de ${maxSizeMB}MB.`;
+      toast.error("Fichier trop volumineux", { description: errorMsg });
+      onError?.(errorMsg);
+      return;
+    }
     
     if (file.name.endsWith('.csv')) {
       processCSVFile(file);
     } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
       processExcelFile(file);
     } else {
-      toast.error("Type de fichier non supporté", {
-        description: "Veuillez importer un fichier Excel (.xlsx, .xls) ou CSV."
-      });
+      const errorMsg = "Veuillez importer un fichier Excel (.xlsx, .xls) ou CSV.";
+      toast.error("Type de fichier non supporté", { description: errorMsg });
+      onError?.(errorMsg);
     }
     
-  }, [onFileUploaded]);
+  }, [onFileUploaded, maxFileSize, onError]);
   
   const { getRootProps, getInputProps, isDragReject } = useDropzone({
     onDrop,
@@ -167,12 +233,26 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUploaded }) => {
               <p className="text-sm text-slate-500 mt-1">
                 Formats acceptés: .xlsx, .xls, .csv
               </p>
+              <p className="text-xs text-slate-400 mt-1">
+                Taille maximale: {Math.round(maxFileSize / (1024 * 1024))}MB
+              </p>
             </div>
             
             <Button type="button">
               <Upload className="mr-2 h-4 w-4" />
               Parcourir les fichiers
             </Button>
+            
+            <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded w-full max-w-md">
+              <p>Le fichier doit contenir les colonnes suivantes:</p>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {['DATE ECHEANCE', 'Cotisation', 'N° adh', 'SOCIETE', 'Dirigeant', 'E MAIL 1', 'E Mail 2', 'Adresse', 'ville'].map((column) => (
+                  <span key={column} className="bg-slate-200 px-1 py-0.5 rounded text-slate-700">
+                    {column}
+                  </span>
+                ))}
+              </div>
+            </div>
           </>
         )}
       </div>

@@ -81,6 +81,17 @@ const DataTable: React.FC<DataTableProps> = ({
       return;
     }
     
+    const requiredFields = ['SOCIETE', 'N° adh', 'Cotisation'];
+    const missingFields = selectedData.some(row => 
+      requiredFields.some(field => !row[field] && !row[field.toLowerCase()])
+    );
+    
+    if (missingFields) {
+      toast.warning("Données incomplètes", { 
+        description: "Certaines lignes sélectionnées n'ont pas toutes les données requises (SOCIETE, N° adh, Cotisation)." 
+      });
+    }
+    
     onGeneratePdf(selectedData);
     
     generateAndDownloadPdf(selectedData);
@@ -159,35 +170,53 @@ const DataTable: React.FC<DataTableProps> = ({
       return;
     }
     
-    const hasEmailColumns = selectedData.some(row => 
-      (row['E MAIL 1'] && row['E MAIL 1'].includes('@')) || 
-      (row['E Mail 2'] && row['E Mail 2'].includes('@'))
-    );
+    const validateEmail = (email: string) => {
+      return String(email)
+        .toLowerCase()
+        .match(
+          /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+        );
+    };
     
-    if (!hasEmailColumns) {
+    const emailsByRow = selectedData.map(row => {
+      const validEmails = [];
+      if (row['E MAIL 1'] && validateEmail(row['E MAIL 1'])) {
+        validEmails.push(row['E MAIL 1']);
+      }
+      if (row['E Mail 2'] && validateEmail(row['E Mail 2'])) {
+        validEmails.push(row['E Mail 2']);
+      }
+      return {
+        row,
+        emails: validEmails
+      };
+    });
+    
+    const rowsWithNoEmails = emailsByRow.filter(item => item.emails.length === 0);
+    const totalEmailCount = emailsByRow.reduce((sum, item) => sum + item.emails.length, 0);
+    
+    if (totalEmailCount === 0) {
       toast.error("Adresses email manquantes", { 
-        description: "Les colonnes 'E MAIL 1' ou 'E Mail 2' sont vides ou ne contiennent pas d'adresses email valides." 
+        description: "Aucune adresse email valide n'a été trouvée dans les colonnes 'E MAIL 1' ou 'E Mail 2'." 
       });
       return;
     }
     
+    if (rowsWithNoEmails.length > 0) {
+      toast.warning("Emails manquants", { 
+        description: `${rowsWithNoEmails.length} ligne(s) n'ont pas d'adresse email valide.` 
+      });
+    }
+    
     onSendEmail(selectedData);
     
-    const emailAddresses = selectedData.reduce((emails: string[], row) => {
-      if (row['E MAIL 1'] && row['E MAIL 1'].includes('@')) {
-        emails.push(row['E MAIL 1']);
-      }
-      if (row['E Mail 2'] && row['E Mail 2'].includes('@')) {
-        emails.push(row['E Mail 2']);
-      }
-      return emails;
-    }, []);
+    const allValidEmails = emailsByRow.flatMap(item => item.emails);
     
-    if (emailAddresses.length > 0) {
-      toast.info(`Adresses email détectées (${emailAddresses.length})`, {
-        description: emailAddresses.length > 3 
-          ? `${emailAddresses.slice(0, 3).join(', ')} et ${emailAddresses.length - 3} autres adresses`
-          : emailAddresses.join(', ')
+    if (allValidEmails.length > 0) {
+      toast.info(`Adresses email détectées (${allValidEmails.length})`, {
+        description: allValidEmails.length > 3 
+          ? `${allValidEmails.slice(0, 3).join(', ')} et ${allValidEmails.length - 3} autres adresses`
+          : allValidEmails.join(', ')
       });
     }
   };

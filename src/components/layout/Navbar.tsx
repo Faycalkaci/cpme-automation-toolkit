@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut, User, ChevronDown } from 'lucide-react';
@@ -28,7 +29,9 @@ const Navbar: React.FC<NavbarProps> = ({
                 <Menu className="h-5 w-5" />
               </Button>}
             <Link to="/" className="flex items-center space-x-2">
-              
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                <span className="text-white font-bold">CT</span>
+              </div>
               <span className="font-bold text-lg tracking-tight">CPME Tool</span>
             </Link>
           </div>

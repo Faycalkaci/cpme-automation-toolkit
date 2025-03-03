@@ -9,4 +9,10 @@ export type Template = {
   file?: File;
   savedBy?: string;
   permanent?: boolean;
+  // Added fields for better tracking and management
+  createdBy?: string;
+  organizationId?: string;
+  lastModified?: string;
+  mappingConfig?: Record<string, string>;
+  isPublic?: boolean;
 };
