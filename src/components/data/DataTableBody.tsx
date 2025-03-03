@@ -2,6 +2,7 @@
 import React from 'react';
 import { TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDataTable } from './DataTableContext';
 
 const DataTableBody: React.FC = () => {
@@ -15,19 +16,21 @@ const DataTableBody: React.FC = () => {
   return (
     <TableBody>
       {filteredData.length > 0 ? (
-        filteredData.map((row, rowIndex) => (
-          <TableRow key={rowIndex} className={selectedRows[rowIndex] ? 'bg-primary/5' : ''}>
-            <TableCell className="text-center">
-              <Checkbox 
-                checked={selectedRows[rowIndex] || false}
-                onCheckedChange={() => toggleRowSelection(rowIndex)}
-              />
-            </TableCell>
-            {headers.map((header, cellIndex) => (
-              <TableCell key={cellIndex}>{row[header] || '-'}</TableCell>
-            ))}
-          </TableRow>
-        ))
+        <ScrollArea className="max-h-[250px]">
+          {filteredData.map((row, rowIndex) => (
+            <TableRow key={rowIndex} className={selectedRows[rowIndex] ? 'bg-primary/5' : ''}>
+              <TableCell className="text-center">
+                <Checkbox 
+                  checked={selectedRows[rowIndex] || false}
+                  onCheckedChange={() => toggleRowSelection(rowIndex)}
+                />
+              </TableCell>
+              {headers.map((header, cellIndex) => (
+                <TableCell key={cellIndex}>{row[header] || '-'}</TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </ScrollArea>
       ) : (
         <TableRow>
           <TableCell colSpan={headers.length + 1} className="h-24 text-center">

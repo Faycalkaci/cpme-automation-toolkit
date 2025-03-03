@@ -1,7 +1,6 @@
 
 import React from 'react';
-import { FileSpreadsheet, Upload, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { DropzoneRootProps, DropzoneInputProps } from 'react-dropzone';
 
 interface FileDropzoneProps {
   isDragActive: boolean;
@@ -9,8 +8,8 @@ interface FileDropzoneProps {
   isLoading: boolean;
   maxFileSize: number;
   requiredHeaders: string[];
-  getRootProps: () => any;
-  getInputProps: () => any;
+  getRootProps: () => DropzoneRootProps;
+  getInputProps: () => DropzoneInputProps;
 }
 
 const FileDropzone: React.FC<FileDropzoneProps> = ({
@@ -25,77 +24,46 @@ const FileDropzone: React.FC<FileDropzoneProps> = ({
   return (
     <div
       {...getRootProps()}
-      className={`border-2 border-dashed rounded-lg p-8 transition-colors ${
-        isDragActive 
-          ? 'border-primary bg-primary/5' 
-          : isDragReject 
-            ? 'border-destructive bg-destructive/5' 
-            : 'border-slate-200 hover:border-primary/50 hover:bg-slate-50'
-      }`}
+      className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors 
+        ${isDragActive ? 'border-primary bg-primary/5' : 'border-gray-300'}
+        ${isDragReject ? 'border-red-500 bg-red-50' : ''}
+        ${isLoading ? 'opacity-60 pointer-events-none' : ''}
+      `}
     >
       <input {...getInputProps()} />
       
-      <div className="flex flex-col items-center justify-center space-y-4 text-center">
-        {isLoading ? (
-          <div className="animate-pulse">
-            <div className="h-12 w-12 rounded-full border-4 border-t-primary border-slate-200 animate-spin mx-auto" />
-            <p className="mt-4 text-slate-700">Traitement en cours...</p>
+      {isLoading ? (
+        <div className="py-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-sm text-gray-600">Analyse du fichier en cours...</p>
+        </div>
+      ) : (
+        <>
+          <div className="mb-4">
+            <div className="mx-auto bg-gray-100 rounded-full p-3 w-12 h-12 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
           </div>
-        ) : (
-          <>
-            <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center">
-              {isDragReject ? (
-                <AlertCircle className="h-8 w-8 text-destructive" />
-              ) : (
-                <FileSpreadsheet className="h-8 w-8 text-primary" />
-              )}
+          
+          <p className="text-base">
+            <span className="font-medium">Cliquez pour parcourir</span> ou glissez-déposez
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            Formats supportés: CSV, Excel (.xlsx, .xls)
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            Taille maximale: {Math.round(maxFileSize / 1024 / 1024)} Mo
+          </p>
+          
+          {requiredHeaders.length > 0 && (
+            <div className="mt-3 text-sm text-gray-500">
+              <p>Champs requis: {requiredHeaders.join(', ')}</p>
             </div>
-            
-            <div>
-              <p className="text-lg font-medium text-slate-900">
-                {isDragActive 
-                  ? "Déposez votre fichier ici"
-                  : isDragReject
-                    ? "Ce type de fichier n'est pas supporté"
-                    : "Glissez-déposez votre fichier"
-                }
-              </p>
-              <p className="text-sm text-slate-500 mt-1">
-                Formats acceptés: .xlsx, .xls, .csv
-              </p>
-              <p className="text-xs text-slate-400 mt-1">
-                Taille maximale: {Math.round(maxFileSize / (1024 * 1024))}MB
-              </p>
-            </div>
-            
-            <Button type="button">
-              <Upload className="mr-2 h-4 w-4" />
-              Parcourir les fichiers
-            </Button>
-            
-            <RequiredFieldsList requiredHeaders={requiredHeaders} />
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
-
-interface RequiredFieldsListProps {
-  requiredHeaders: string[];
-}
-
-const RequiredFieldsList: React.FC<RequiredFieldsListProps> = ({ requiredHeaders }) => {
-  return (
-    <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded w-full max-w-md">
-      <p>Le fichier doit contenir les colonnes suivantes:</p>
-      <div className="mt-1 flex flex-wrap gap-1">
-        {requiredHeaders.map((column) => (
-          <span key={column} className="bg-slate-200 px-1 py-0.5 rounded text-slate-700">
-            {column}
-          </span>
-        ))}
-      </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

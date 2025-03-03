@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { toast } from 'sonner';
 import { useDataTable } from './DataTableContext';
-import { generateAndDownloadPdf, validateRequiredFields } from '@/utils/pdfUtils';
+import { validateRequiredFields } from '@/utils/pdfUtils';
 import { getValidEmailsFromData, displayEmailResults, displayEmailAddresses } from '@/utils/emailUtils';
 import { exportToCsv } from '@/utils/exportUtils';
 import { documentStorage } from '@/services/documentStorage';
@@ -35,14 +34,9 @@ export const useDataTableOperations = () => {
     
     onGeneratePdf(selectedData);
     
-    // Générer et télécharger le PDF
-    generateAndDownloadPdf(selectedData, headers);
-    
-    // Sauvegarder les documents générés
     const currentDate = new Date();
     const formattedDate = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`;
     
-    // Créer un document pour chaque ligne sélectionnée
     const generatedDocuments = selectedData.map(row => {
       const company = row.SOCIETE || row.societe || row.Société || row.société || 'Entreprise';
       return {
@@ -56,7 +50,6 @@ export const useDataTableOperations = () => {
       };
     });
     
-    // Sauvegarder les documents
     documentStorage.saveDocuments(generatedDocuments)
       .then(() => {
         console.log(`${generatedDocuments.length} documents sauvegardés avec succès`);
@@ -85,11 +78,9 @@ export const useDataTableOperations = () => {
     const allValidEmails = emailData.emailsByRow.flatMap(item => item.emails);
     displayEmailAddresses(allValidEmails);
     
-    // Sauvegarder les documents envoyés
     const currentDate = new Date();
     const formattedDate = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`;
     
-    // Créer un document pour chaque ligne sélectionnée
     const generatedDocuments = selectedData.map(row => {
       const company = row.SOCIETE || row.societe || row.Société || row.société || 'Entreprise';
       return {
@@ -103,7 +94,6 @@ export const useDataTableOperations = () => {
       };
     });
     
-    // Sauvegarder les documents
     documentStorage.saveDocuments(generatedDocuments)
       .then(() => {
         console.log(`${generatedDocuments.length} documents envoyés sauvegardés avec succès`);

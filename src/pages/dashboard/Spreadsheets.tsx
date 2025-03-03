@@ -13,26 +13,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FileUploader from '@/components/data/FileUploader';
 import DataTable from '@/components/data/DataTable';
 import { useSpreadsheetTemplates } from '@/hooks/useSpreadsheetTemplates';
-import { exportToCSV, validateEmailFields } from '@/utils/spreadsheetUtils';
+import { exportToCSV } from '@/utils/spreadsheetUtils';
 import GeneratePdfDialog from '@/components/spreadsheets/GeneratePdfDialog';
 import EmailDialog from '@/components/spreadsheets/EmailDialog';
 import ImportInstructions from '@/components/spreadsheets/ImportInstructions';
 import DataActions from '@/components/spreadsheets/DataActions';
+import { useDataStorage } from '@/hooks/useDataStorage';
 
 const Spreadsheets = () => {
-  const [activeTab, setActiveTab] = useState('upload');
-  const [data, setData] = useState<any[]>([]);
-  const [headers, setHeaders] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('upload');
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   
   const { templates, selectedTemplate, setSelectedTemplate } = useSpreadsheetTemplates();
+  const { data, headers, setData, hasData } = useDataStorage<any>();
   
   const handleFileUploaded = (parsedData: any[], headers: string[]) => {
-    setData(parsedData);
-    setHeaders(headers);
+    setData(parsedData, headers);
     setActiveTab('data');
     
     toast.success('Fichier importé avec succès', {
@@ -61,11 +60,6 @@ const Spreadsheets = () => {
     }
     
     setSelectedRows(rows);
-    
-    if (!validateEmailFields(rows)) {
-      return;
-    }
-    
     setShowEmailDialog(true);
   };
   
@@ -101,7 +95,7 @@ const Spreadsheets = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-8">
           <TabsTrigger value="upload">Importation</TabsTrigger>
-          <TabsTrigger value="data" disabled={data.length === 0}>Données</TabsTrigger>
+          <TabsTrigger value="data" disabled={!hasData}>Données</TabsTrigger>
         </TabsList>
         
         <TabsContent value="upload">
