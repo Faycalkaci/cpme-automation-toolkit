@@ -26,7 +26,7 @@ export const usePdfGeneration = (
       
       try {
         // If we have a File object in the template, use it
-        if (template.file) {
+        if (template.file && typeof template.file.arrayBuffer === 'function') {
           const arrayBuffer = await template.file.arrayBuffer();
           setTemplateBytes(arrayBuffer);
           return;
@@ -37,7 +37,7 @@ export const usePdfGeneration = (
           // Get the template from templateStorage
           const storedTemplate = await templateStorage.getTemplateById(template.id);
           
-          if (storedTemplate && storedTemplate.file) {
+          if (storedTemplate && storedTemplate.file && typeof storedTemplate.file.arrayBuffer === 'function') {
             const arrayBuffer = await storedTemplate.file.arrayBuffer();
             setTemplateBytes(arrayBuffer);
             return;
@@ -47,11 +47,24 @@ export const usePdfGeneration = (
           const response = await fetch(template.fileUrl);
           const arrayBuffer = await response.arrayBuffer();
           setTemplateBytes(arrayBuffer);
+        } else {
+          // Create a default PDF if no template is available
+          console.log("No template file available, creating default PDF");
+          const defaultPdfBuffer = await pdfMappingService.createDefaultPdf();
+          setTemplateBytes(defaultPdfBuffer);
         }
       } catch (error) {
         console.error("Error loading template file:", error);
         toast.error("Erreur lors du chargement du modèle");
-        setTemplateBytes(null);
+        
+        // Create a default PDF as fallback
+        try {
+          const defaultPdfBuffer = await pdfMappingService.createDefaultPdf();
+          setTemplateBytes(defaultPdfBuffer);
+        } catch (fallbackError) {
+          console.error("Error creating default PDF:", fallbackError);
+          setTemplateBytes(null);
+        }
       }
     };
     

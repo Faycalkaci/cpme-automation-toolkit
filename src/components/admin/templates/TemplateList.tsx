@@ -12,6 +12,11 @@ import { Button } from '@/components/ui/button';
 // Define the union type
 type TemplateType = Template | SpreadsheetTemplate;
 
+// Type guard function to check if a template is a Template or SpreadsheetTemplate
+const isTemplate = (template: TemplateType): template is Template => {
+  return 'date' in template && 'documentType' in template;
+};
+
 interface TemplateListProps {
   templates: Template[];
   canSaveTemplate: boolean;

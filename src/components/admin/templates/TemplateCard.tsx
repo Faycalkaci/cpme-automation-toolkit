@@ -9,6 +9,11 @@ import { SpreadsheetTemplate } from '@/hooks/useSpreadsheetTemplates';
 // Define the union type
 type TemplateType = Template | SpreadsheetTemplate;
 
+// Type guard function to check if a template is a Template or SpreadsheetTemplate
+const isTemplate = (template: TemplateType): template is Template => {
+  return 'date' in template && 'documentType' in template;
+};
+
 interface TemplateCardProps {
   template: Template;
   canSaveTemplate: boolean;
@@ -73,7 +78,7 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
       </CardContent>
       <CardFooter className="flex justify-between border-t bg-slate-50 py-3">
         <div className="text-xs text-slate-500">
-          {template.savedBy ? `Par ${template.savedBy}` : 'Ajouté le'} {new Date(template.date).toLocaleDateString('fr-FR')}
+          {template.savedBy ? `Par ${template.savedBy}` : 'Ajouté le'} {template.date}
         </div>
         <div className="flex space-x-2">
           <Button variant="ghost" size="sm" onClick={() => openPreviewDialog(template)}>
