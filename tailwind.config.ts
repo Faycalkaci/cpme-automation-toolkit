@@ -96,6 +96,10 @@ export default {
         'scale-in': {
           '0%': { transform: 'scale(0.95)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' }
+        },
+        'shine': {
+          '0%': { left: '-100%' },
+          '100%': { left: '100%' }
         }
       },
       animation: {
@@ -105,14 +109,16 @@ export default {
         'slide-down': 'slide-down 0.3s ease-out',
         'fade-in': 'fade-in 0.4s ease-out',
         'blur-in': 'blur-in 0.4s ease-out',
-        'scale-in': 'scale-in 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        'scale-in': 'scale-in 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        'shine': 'shine 2s infinite'
       },
       boxShadow: {
         'soft': '0 4px 20px 0 rgba(0, 0, 0, 0.05)',
         'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
         'neo': '8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff',
         'subtle': '0 2px 10px rgba(0, 0, 0, 0.03)',
-        'premium': '0 10px 30px -5px rgba(0, 0, 0, 0.1)'
+        'premium': '0 10px 30px -5px rgba(0, 0, 0, 0.1)',
+        'card': '0 1px 3px rgba(0,0,0,0.05), 0 10px 15px -5px rgba(0,0,0,0.02)'
       },
       backdropFilter: {
         'glass': 'blur(20px) saturate(180%)',
@@ -120,7 +126,8 @@ export default {
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-shine': 'linear-gradient(45deg, rgba(255, 255, 255, 0) 45%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 55%)',
-        'noise': 'url("/noise.png")'
+        'noise': 'url("/noise.png")',
+        'gradient-blue': 'linear-gradient(to right, #4364f7, #6fb1fc)'
       },
       transitionTimingFunction: {
         'spring': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)'

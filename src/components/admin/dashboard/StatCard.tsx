@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LucideIcon } from 'lucide-react';
 
 interface StatCardProps {
   title: string;
@@ -18,20 +17,30 @@ const StatCard: React.FC<StatCardProps> = ({
   icon,
   change,
 }) => {
+  // Determine if change is positive or negative
+  const isPositive = change?.includes('+');
+  
   return (
-    <Card>
+    <Card className="border border-slate-200 shadow-sm transition-all duration-300 hover:shadow-card hover:-translate-y-1">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-sm font-medium text-slate-500">
+          <CardTitle className="text-sm font-medium text-slate-600">
             {title}
           </CardTitle>
-          {icon}
+          <div className="h-10 w-10 rounded-full flex items-center justify-center bg-primary/10">
+            {icon}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold">{value}</div>
+        <div className="text-3xl font-bold text-slate-800">{value}</div>
         {description && <p className="text-xs text-slate-500 mt-1">{description}</p>}
-        {change && <p className="text-xs text-slate-500 mt-1">{change}</p>}
+        {change && (
+          <p className={`text-xs mt-2 flex items-center ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
+            <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${isPositive ? 'bg-green-500' : 'bg-red-500'}`}></span>
+            {change}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
