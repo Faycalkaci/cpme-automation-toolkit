@@ -4,12 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { FileText, Eye, Trash2, Check, File, Download } from 'lucide-react';
 import { Template } from './types';
+import { SpreadsheetTemplate } from '@/hooks/useSpreadsheetTemplates';
+
+// Define the union type
+type TemplateType = Template | SpreadsheetTemplate;
 
 interface TemplateCardProps {
   template: Template;
   canSaveTemplate: boolean;
   openDeleteDialog: (template: Template) => void;
-  openPreviewDialog: (template: Template) => void;
+  openPreviewDialog: (template: TemplateType) => void;
   openSaveDialog: (template: Template) => void;
 }
 

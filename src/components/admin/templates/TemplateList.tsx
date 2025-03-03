@@ -1,17 +1,22 @@
+
 import React, { useState } from 'react';
 import TemplateCard from './TemplateCard';
 import { Template } from './types';
+import { SpreadsheetTemplate } from '@/hooks/useSpreadsheetTemplates';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, File, Filter, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 
+// Define the union type
+type TemplateType = Template | SpreadsheetTemplate;
+
 interface TemplateListProps {
   templates: Template[];
   canSaveTemplate: boolean;
   openDeleteDialog: (template: Template) => void;
-  openPreviewDialog: (template: Template) => void;
+  openPreviewDialog: (template: TemplateType) => void;
   openSaveDialog: (template: Template) => void;
 }
 
