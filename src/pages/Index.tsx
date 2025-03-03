@@ -382,21 +382,21 @@ const Index = () => {
                 <div className="space-y-4">
                   <div>
                     <p className="font-medium">Adhérent:</p>
-                    <p><span className="bg-primary/10 text-primary text-xs px-1 rounded">{{SOCIETE}}</span></p>
-                    <p>Représenté par: <span className="bg-primary/10 text-primary text-xs px-1 rounded">{{Dirigeant}}</span></p>
-                    <p><span className="bg-primary/10 text-primary text-xs px-1 rounded">{{Adresse}}</span>, <span className="bg-primary/10 text-primary text-xs px-1 rounded">{{ville}}</span></p>
+                    <p><span className="bg-primary/10 text-primary text-xs px-1 rounded">{'{{SOCIETE}}'}</span></p>
+                    <p>Représenté par: <span className="bg-primary/10 text-primary text-xs px-1 rounded">{'{{Dirigeant}}'}</span></p>
+                    <p><span className="bg-primary/10 text-primary text-xs px-1 rounded">{'{{Adresse}}'}</span>, <span className="bg-primary/10 text-primary text-xs px-1 rounded">{'{{ville}}'}</span></p>
                   </div>
                   
                   <div>
-                    <p className="font-medium">Numéro d'adhérent: <span className="bg-primary/10 text-primary text-xs px-1 rounded">{{N° adh}}</span></p>
-                    <p>Cotisation: <span className="bg-primary/10 text-primary text-xs px-1 rounded">{{Cotisation}}</span> €</p>
-                    <p>Date d'échéance: <span className="bg-primary/10 text-primary text-xs px-1 rounded">{{DATE ECHEANCE}}</span></p>
+                    <p className="font-medium">Numéro d'adhérent: <span className="bg-primary/10 text-primary text-xs px-1 rounded">{'{{N° adh}}'}</span></p>
+                    <p>Cotisation: <span className="bg-primary/10 text-primary text-xs px-1 rounded">{'{{Cotisation}}'}</span> €</p>
+                    <p>Date d'échéance: <span className="bg-primary/10 text-primary text-xs px-1 rounded">{'{{DATE ECHEANCE}}'}</span></p>
                   </div>
                   
                   <div>
                     <p className="font-medium">Contact:</p>
-                    <p><span className="bg-primary/10 text-primary text-xs px-1 rounded">{{E MAIL 1}}</span></p>
-                    <p><span className="bg-primary/10 text-primary text-xs px-1 rounded">{{E Mail 2}}</span></p>
+                    <p><span className="bg-primary/10 text-primary text-xs px-1 rounded">{'{{E MAIL 1}}'}</span></p>
+                    <p><span className="bg-primary/10 text-primary text-xs px-1 rounded">{'{{E Mail 2}}'}</span></p>
                   </div>
                 </div>
               </div>
@@ -447,7 +447,7 @@ const Index = () => {
                 </div>
                 <p className="text-slate-600 mb-6 italic">"{testimonial.content}"</p>
                 <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-cpme/10 flex items-center justify-center mr-3">
+                  <div className="w-10 h-10 rounded-full bg-cpme-dark flex items-center justify-center mr-3">
                     <MessageCircle className="h-5 w-5 text-cpme" />
                   </div>
                   <div>
