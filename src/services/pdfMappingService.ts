@@ -1,5 +1,5 @@
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { toast } from 'sonner';
 
 export interface TemplateField {
@@ -24,7 +24,6 @@ export const pdfMappingService = {
   autoMapFields: async (pdfBytes: ArrayBuffer, csvHeaders: string[]) => {
     try {
       const pdfDoc = await PDFDocument.load(pdfBytes);
-      const pages = pdfDoc.getPages();
       
       // Create mappings based on CSV headers that match our predefined fields
       const mappings = new Map<string, string>();
@@ -58,44 +57,64 @@ export const pdfMappingService = {
     mappings: Map<string, string>
   ) => {
     try {
-      // Load the PDF document
+      // Load the original PDF document
       const pdfDoc = await PDFDocument.load(templateBytes);
       const pages = pdfDoc.getPages();
+      const page = pages[0]; // Assuming we're working with the first page
       
-      // This is a simplified approach. In a real implementation,
-      // we would need to use a PDF modification library that supports
-      // text replacement with proper positioning.
-      // For demonstration purposes, we'll create a new PDF with the data
+      // Set up font
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const fontSize = 12;
       
-      // Create a new PDF with the same dimensions
-      const newPdf = await PDFDocument.create();
+      // Set the document title
+      page.drawText(`appel de cotisation CPME`, {
+        x: 50,
+        y: page.getHeight() - 50,
+        size: 16,
+        font
+      });
       
-      // For each page in the original PDF
-      for (const page of pages) {
-        const { width, height } = page.getSize();
-        const newPage = newPdf.addPage([width, height]);
+      // Define y position start and offset
+      let yPosition = page.getHeight() - 80;
+      const lineHeight = 25;
+      
+      // Define field formatting
+      const fieldTextFormat = {
+        DATE_ECHEANCE: (value: string) => `DATE ECHEANCE: ${value}`,
+        Cotisation: (value: string) => `Cotisation: ${value}`,
+        'N° adh': (value: string) => `N° adh: ${value}`,
+        SOCIETE: (value: string) => `SOCIETE: ${value}`,
+        Dirigeant: (value: string) => `Dirigeant: ${value}`,
+        'E MAIL 1': (value: string) => `E MAIL 1: ${value}`,
+        'E Mail 2': (value: string) => `E Mail 2: ${value}`,
+        Adresse: (value: string) => `Adresse: ${value}`,
+        ville: (value: string) => `ville: ${value}`
+      };
+      
+      // Draw each mapped field on the PDF
+      mappings.forEach((placeholder, fieldName) => {
+        // Find the value in the data using case-insensitive matching
+        const value = findValueCaseInsensitive(data, fieldName) || '-';
         
-        // Draw the original page content (simplified)
-        // In a real implementation, we would properly transfer all content
+        // Format the field text
+        const formatter = fieldTextFormat[fieldName as keyof typeof fieldTextFormat] || 
+                         ((v: string) => `${fieldName}: ${v}`);
+        const text = formatter(value);
         
-        // Apply text replacements
-        let yOffset = 50;
-        mappings.forEach((placeholder, fieldName) => {
-          const value = data[fieldName] || '';
-          if (value) {
-            // This is simplified - in a real implementation we would place text at correct positions
-            newPage.drawText(`${fieldName}: ${value}`, {
-              x: 50,
-              y: height - yOffset,
-              size: 12
-            });
-            yOffset += 20;
-          }
+        // Draw text on the PDF
+        page.drawText(text, {
+          x: 50,
+          y: yPosition,
+          size: fontSize,
+          font
         });
-      }
+        
+        // Update Y position for next field
+        yPosition -= lineHeight;
+      });
       
       // Save the PDF
-      const pdfBytes = await newPdf.save();
+      const pdfBytes = await pdfDoc.save();
       return pdfBytes;
     } catch (error) {
       console.error('Error generating filled PDF:', error);
@@ -139,3 +158,21 @@ export const pdfMappingService = {
     }
   }
 };
+
+// Helper function to find field values case-insensitively
+function findValueCaseInsensitive(data: Record<string, string>, field: string): string | undefined {
+  // Try exact match first
+  if (data[field] !== undefined) {
+    return data[field];
+  }
+  
+  // Try case-insensitive match
+  const lowerField = field.toLowerCase();
+  for (const key in data) {
+    if (key.toLowerCase() === lowerField) {
+      return data[key];
+    }
+  }
+  
+  return undefined;
+}

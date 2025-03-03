@@ -1,19 +1,21 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import { jsPDF } from 'jspdf';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { v4 as uuidv4 } from 'uuid';
 import { documentStorage } from '@/services/documentStorage';
+import { pdfMappingService } from '@/services/pdfMappingService';
+import { templateStorage } from '@/services/templateStorage';
 
 interface Template {
   id: string;
   name: string;
   mappingFields?: string[];
+  fileUrl?: string;
+  file?: File;
 }
 
 interface GeneratePdfDialogProps {
@@ -35,11 +37,61 @@ const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [templateBytes, setTemplateBytes] = useState<ArrayBuffer | null>(null);
   
-  const confirmGeneration = () => {
+  // Load the template file when the selected template changes
+  useEffect(() => {
+    const loadTemplateFile = async () => {
+      if (!selectedTemplate) return;
+      
+      const template = templates.find(t => t.id === selectedTemplate);
+      if (!template) return;
+      
+      try {
+        // If we have a File object in the template, use it
+        if (template.file) {
+          const arrayBuffer = await template.file.arrayBuffer();
+          setTemplateBytes(arrayBuffer);
+          return;
+        }
+        
+        // Otherwise, try to fetch it from the fileUrl
+        if (template.fileUrl) {
+          // Get the template from templateStorage
+          const storedTemplate = await templateStorage.getTemplateById(template.id);
+          
+          if (storedTemplate && storedTemplate.file) {
+            const arrayBuffer = await storedTemplate.file.arrayBuffer();
+            setTemplateBytes(arrayBuffer);
+            return;
+          }
+          
+          // If we couldn't get it from storage, try to fetch it
+          const response = await fetch(template.fileUrl);
+          const arrayBuffer = await response.arrayBuffer();
+          setTemplateBytes(arrayBuffer);
+        }
+      } catch (error) {
+        console.error("Error loading template file:", error);
+        toast.error("Erreur lors du chargement du modèle");
+        setTemplateBytes(null);
+      }
+    };
+    
+    loadTemplateFile();
+  }, [selectedTemplate, templates]);
+  
+  const confirmGeneration = async () => {
     if (!selectedTemplate) {
       toast.error('Sélection requise', {
         description: 'Veuillez sélectionner un modèle de document.'
+      });
+      return;
+    }
+    
+    if (!templateBytes) {
+      toast.error('Modèle non disponible', {
+        description: 'Le fichier modèle n\'a pas pu être chargé. Veuillez réessayer.'
       });
       return;
     }
@@ -59,100 +111,79 @@ const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
       description: `${selectedRows.length} documents sont en cours de génération.`
     });
     
-    setTimeout(() => {
-      try {
-        const doc = new jsPDF();
+    try {
+      // Get mapping configuration for the template
+      const mappings = await pdfMappingService.getTemplateMapping(selectedTemplate);
+      
+      // Generate PDFs for each selected row
+      for (let i = 0; i < selectedRows.length; i++) {
+        const row = selectedRows[i];
         
-        doc.setFontSize(16);
-        doc.text(`${templateObj?.name || 'Document'} CPME`, 10, 20);
+        // Generate the filled PDF
+        const pdfBytes = await pdfMappingService.generateFilledPDF(
+          templateBytes,
+          row,
+          mappings
+        );
         
-        let yPos = 30;
+        // Create a blob and download link
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
         
-        selectedRows.forEach((row, index) => {
-          if (index > 0) {
-            doc.addPage();
-            yPos = 30;
-            doc.text(`${templateObj?.name || 'Document'} CPME`, 10, 20);
-          }
-          
-          if (templateObj && templateObj.mappingFields) {
-            templateObj.mappingFields.forEach(field => {
-              // Vérifier si le champ existe dans les données de la ligne (insensible à la casse)
-              const fieldValue = row[field] || findCaseInsensitiveField(row, field) || '-';
-              doc.setFontSize(12);
-              doc.text(`${field}: ${fieldValue}`, 10, yPos);
-              yPos += 10;
-            });
-          } else {
-            Object.entries(row).forEach(([key, value]) => {
-              if (value) {
-                doc.setFontSize(12);
-                doc.text(`${key}: ${value}`, 10, yPos);
-                yPos += 10;
-              }
-            });
-          }
-        });
+        // Create a filename based on the company name or a timestamp
+        const companyName = row.SOCIETE || row.societe || row.Société || row.société || 'document';
+        const sanitizedName = companyName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        link.download = `${sanitizedName}_cpme.pdf`;
         
-        doc.save(`${templateObj?.id || 'document'}_cpme.pdf`);
-        
-        // Créer des entrées pour les documents générés
-        const currentDate = new Date();
-        const formattedDate = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`;
-        
-        const generatedDocuments = selectedRows.map(row => {
-          const company = row.SOCIETE || row.societe || row.Société || row.société || 'Entreprise';
-          const type = templateObj?.name || 'Document';
-          const size = Math.floor(Math.random() * 20) + 40 + ' Ko'; // Taille aléatoire entre 40 et 60 Ko
-          
-          return {
-            id: uuidv4(),
-            name: `${type} - ${company}.pdf`,
-            type,
-            date: formattedDate,
-            size,
-            sent: false,
-            company
-          };
-        });
-        
-        // Sauvegarder les documents générés
-        documentStorage.saveDocuments(generatedDocuments)
-          .then(() => {
-            console.log(`${generatedDocuments.length} documents sauvegardés avec succès`);
-          })
-          .catch(error => {
-            console.error('Erreur lors de la sauvegarde des documents:', error);
-          });
-        
-        setIsGenerating(false);
-        toast.success('Génération terminée', {
-          description: `${selectedRows.length} documents ont été générés avec succès.`
-        });
-        
-        onOpenChange(false);
-      } catch (error) {
-        console.error('Error generating PDF', error);
-        setGenerationError("Une erreur est survenue lors de la génération du PDF. Veuillez vérifier que toutes les données sont présentes.");
-        setIsGenerating(false);
-        toast.error('Erreur de génération', {
-          description: 'Une erreur est survenue lors de la génération du PDF.'
-        });
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
-    }, 1000);
-  };
-  
-  // Fonction utilitaire pour trouver les valeurs de champ insensibles à la casse
-  const findCaseInsensitiveField = (row: any, fieldName: string): string | undefined => {
-    const lowerFieldName = fieldName.toLowerCase();
-    
-    for (const [key, value] of Object.entries(row)) {
-      if (key.toLowerCase() === lowerFieldName) {
-        return value as string;
-      }
+      
+      // Créer des entrées pour les documents générés
+      const currentDate = new Date();
+      const formattedDate = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`;
+      
+      const generatedDocuments = selectedRows.map(row => {
+        const company = row.SOCIETE || row.societe || row.Société || row.société || 'Entreprise';
+        const type = templateObj?.name || 'Document';
+        const size = Math.floor(Math.random() * 20) + 40 + ' Ko'; // Taille aléatoire entre 40 et 60 Ko
+        
+        return {
+          id: uuidv4(),
+          name: `${type} - ${company}.pdf`,
+          type,
+          date: formattedDate,
+          size,
+          sent: false,
+          company
+        };
+      });
+      
+      // Sauvegarder les documents générés
+      documentStorage.saveDocuments(generatedDocuments)
+        .then(() => {
+          console.log(`${generatedDocuments.length} documents sauvegardés avec succès`);
+        })
+        .catch(error => {
+          console.error('Erreur lors de la sauvegarde des documents:', error);
+        });
+      
+      setIsGenerating(false);
+      toast.success('Génération terminée', {
+        description: `${selectedRows.length} documents ont été générés avec succès.`
+      });
+      
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error generating PDF', error);
+      setGenerationError("Une erreur est survenue lors de la génération du PDF. Veuillez vérifier que toutes les données sont présentes.");
+      setIsGenerating(false);
+      toast.error('Erreur de génération', {
+        description: 'Une erreur est survenue lors de la génération du PDF.'
+      });
     }
-    
-    return undefined;
   };
 
   return (
@@ -216,7 +247,7 @@ const GeneratePdfDialog: React.FC<GeneratePdfDialogProps> = ({
           </Button>
           <Button 
             onClick={confirmGeneration} 
-            disabled={!selectedTemplate || isGenerating}
+            disabled={!selectedTemplate || isGenerating || !templateBytes}
             className={isGenerating ? "opacity-80" : ""}
           >
             <FileText className="mr-2 h-4 w-4" />
