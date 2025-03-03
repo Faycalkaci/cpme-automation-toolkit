@@ -7,7 +7,7 @@ import { firebaseAuth } from '@/services/firebase/firebaseService';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
-import { firestoreService } from '@/services/firebase/firestoreService';
+import { firestoreService } from '@/services/firebase/firestore';
 import { Timestamp } from 'firebase/firestore';
 
 export const SocialLogin: React.FC = () => {

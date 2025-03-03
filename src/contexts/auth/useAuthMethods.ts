@@ -1,6 +1,6 @@
 
 import { firebaseAuth } from '@/services/firebase/firebaseService';
-import { firestoreService } from '@/services/firebase/firestoreService';
+import { firestoreService } from '@/services/firebase/firestore';
 import { getDeviceId, getLocation } from './authUtils';
 import { User, UserRole } from './types';
 import { User as FirebaseUser } from 'firebase/auth';

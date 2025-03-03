@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { loginFormSchema, LoginFormValues } from '@/pages/auth/loginSchema';
 import { useAuth } from '@/contexts/AuthContext';
-import { firestoreService } from '@/services/firebase/firestoreService';
+import { firestoreService } from '@/services/firebase/firestore';
 import { Timestamp } from 'firebase/firestore';
 import { useRateLimit } from './useRateLimit';
 

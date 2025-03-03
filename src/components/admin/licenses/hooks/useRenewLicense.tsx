@@ -1,8 +1,7 @@
-
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { License } from '../types';
-import { firestoreService } from '@/services/firebase/firestoreService';
+import { firestoreService } from '@/services/firebase/firestore';
 
 export const useRenewLicense = (
   licenses: License[],

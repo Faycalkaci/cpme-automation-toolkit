@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { License } from '../types';
-import { firestoreService } from '@/services/firebase/firestoreService';
+import { firestoreService } from '@/services/firebase/firestore';
 import { stripeService } from '@/services/stripe/stripeService';
 
 export const useSuspendLicense = (

@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebase/firebaseService';
-import { firestoreService, UserProfile } from '../services/firebase/firestoreService';
+import { firestoreService, UserProfile } from '@/services/firebase/firestore';
 import { useToast } from '@/components/ui/use-toast';
 
 interface FirebaseContextType {
