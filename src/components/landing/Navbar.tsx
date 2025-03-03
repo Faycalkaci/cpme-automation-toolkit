@@ -15,11 +15,12 @@ const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-subtle">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex justify-between items-center py-4">
           <Link to="/" className="flex items-center space-x-2">
-            <span className="tracking-tight my-0 py-0 text-2xl font-bold mx-[5px] px-[23px] text-[#0069da]">CPME Tool</span>
+            <div className="h-9 w-9 rounded-md bg-blue-gradient flex items-center justify-center text-white font-bold text-lg">CT</div>
+            <span className="text-xl font-bold text-slate-800">CPME Tool</span>
           </Link>
           
           <nav className="hidden md:flex items-center space-x-8">
@@ -43,10 +44,10 @@ const Navbar = () => {
           </nav>
 
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" onClick={() => navigate('/login')}>
+            <Button variant="outline" onClick={() => navigate('/login')} className="shadow-subtle">
               Se connecter
             </Button>
-            <Button onClick={() => navigate('/register')}>
+            <Button onClick={() => navigate('/register')} className="shadow-md hover:shadow-lg transition-all">
               S'inscrire
             </Button>
           </div>

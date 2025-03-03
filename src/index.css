@@ -35,7 +35,7 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221 83% 53%;
     
-    --radius: 0.75rem;
+    --radius: 0.5rem;
     
     --cpme-light: 217 91% 65%;
     --cpme-default: 221 83% 53%;
@@ -121,6 +121,27 @@
   .gradient-text {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-cpme-dark via-cpme-light to-cpme-dark;
   }
+  
+  .elevated-card {
+    @apply bg-white border border-slate-100 shadow-soft rounded-lg hover:shadow-md transition-all duration-200;
+  }
+  
+  .icon-container {
+    @apply h-10 w-10 rounded-full flex items-center justify-center;
+  }
+  
+  .blue-gradient-bg {
+    @apply bg-blue-gradient;
+  }
+  
+  .shimmer {
+    @apply relative overflow-hidden;
+  }
+  
+  .shimmer::after {
+    content: '';
+    @apply absolute top-0 left-0 w-full h-full bg-gradient-shine bg-[length:200%_100%] animate-shine;
+  }
 }
 
 /* Custom scrollbar */
@@ -197,4 +218,28 @@
   100% {
     left: 100%;
   }
+}
+
+/* Card hover effects */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Button styles */
+.btn-primary {
+  @apply bg-primary text-white rounded-md px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300;
+}
+
+.btn-secondary {
+  @apply bg-white border border-slate-200 text-slate-700 rounded-md px-4 py-2 shadow-sm hover:border-primary/30 hover:text-primary transition-all duration-300;
+}
+
+/* Form controls */
+.form-control {
+  @apply rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-transparent transition-all duration-300;
 }

@@ -45,7 +45,8 @@ const itemVariants = {
 };
 
 const HowItWorks = () => {
-  return <section id="how-it-works" className="py-20 bg-white">
+  return (
+    <section id="how-it-works" className="py-20 bg-slate-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold text-slate-900">Comment ça marche</h2>
@@ -58,11 +59,12 @@ const HowItWorks = () => {
         once: true,
         amount: 0.1
       }} className="relative">
-          <div className="absolute top-24 left-0 right-0 h-0.5 bg-slate-200 hidden md:block"></div>
+          <div className="absolute top-24 left-0 right-0 h-1 bg-gradient-to-r from-slate-200 via-primary/20 to-slate-200 hidden md:block"></div>
           <div className="grid md:grid-cols-3 gap-8">
-            {steps.map((step, index) => <motion.div key={index} variants={itemVariants} className="relative">
-                <div className="bg-white p-8 rounded-lg shadow-soft border border-slate-100 relative z-10">
-                  <div className="w-10 h-10 rounded-full bg-cpme flex items-center justify-center text-white font-medium mb-6 absolute -top-5 left-8 shadow-lg">
+            {steps.map((step, index) => (
+              <motion.div key={index} variants={itemVariants} className="relative">
+                <div className="bg-white p-8 rounded-lg shadow-soft border border-slate-100 relative z-10 hover-lift">
+                  <div className="w-10 h-10 rounded-full bg-blue-gradient flex items-center justify-center text-white font-medium mb-6 absolute -top-5 left-8 shadow-lg">
                     {step.step}
                   </div>
                   <div className="pt-4">
@@ -70,11 +72,13 @@ const HowItWorks = () => {
                     <p className="text-slate-600">{step.description}</p>
                   </div>
                 </div>
-              </motion.div>)}
+              </motion.div>
+            ))}
           </div>
         </motion.div>
       </div>
-    </section>;
+    </section>
+  );
 };
 
 export default HowItWorks;
