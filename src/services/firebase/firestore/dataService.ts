@@ -11,7 +11,8 @@ import {
   where, 
   orderBy, 
   Timestamp, 
-  updateDoc 
+  updateDoc,
+  DocumentData
 } from 'firebase/firestore';
 import { 
   ref, 
@@ -138,7 +139,7 @@ export class DataService {
       const querySnapshot = await getDocs(q);
       
       return querySnapshot.docs.map(doc => {
-        const data = doc.data();
+        const data = doc.data() as DocumentData;
         return {
           ...data,
           id: doc.id,
