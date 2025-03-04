@@ -25,7 +25,7 @@ const PaymentSuccess = () => {
         });
         
         // Log the payment success
-        await firestoreService.automationLogs.create({
+        await firestoreService.automationLogs.add({
           type: 'payment_success',
           details: { sessionId, plan: 'standard' },
           status: 'success',

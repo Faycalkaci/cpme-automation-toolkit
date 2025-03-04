@@ -10,7 +10,7 @@ const prices = {
   standard: {
     monthly: 49,
     annual: 49 * 12 * (1 - DISCOUNT_PERCENTAGE / 100),
-    checkoutUrl: 'https://buy.stripe.com/test_cN29DvglM0yl5kA9AA'
+    checkoutUrl: 'https://buy.stripe.com/test_cN29DvglM0yl5kA9AA?prefilled_email=exemple%40gmail.com'
   },
   pro: {
     monthly: 99,
