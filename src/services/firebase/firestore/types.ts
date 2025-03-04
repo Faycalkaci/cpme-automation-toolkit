@@ -13,7 +13,6 @@ export interface UserProfile {
   lastLocation?: string;
   authProvider?: 'google' | 'email' | 'apple' | string;
   uid?: string; // Identifiant unique Firebase Auth
-  hasPaid?: boolean; // New property to track payment status
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }

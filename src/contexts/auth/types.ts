@@ -14,7 +14,6 @@ export interface User {
   devices?: string[];
   lastLogin?: Timestamp | string;
   lastLocation?: string;
-  hasPaid?: boolean;
 }
 
 export interface AuthContextType {
