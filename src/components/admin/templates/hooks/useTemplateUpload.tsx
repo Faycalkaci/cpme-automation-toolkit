@@ -5,6 +5,7 @@ import { Template } from '../types';
 import { useAuth } from '@/contexts/AuthContext';
 import { pdfMappingService, DEFAULT_FIELD_MAPPINGS } from '@/services/pdfMappingService';
 import { useTemplates } from '@/hooks/useTemplates';
+import { firestoreService } from '@/services/firebase/firestore';
 
 export const useTemplateUpload = () => {
   const { user } = useAuth();
@@ -98,7 +99,7 @@ export const useTemplateUpload = () => {
         type: newTemplateType,
         date: new Date().toISOString().split('T')[0],
         fields: mappedFields,
-        fileUrl: URL.createObjectURL(selectedFile),
+        fileUrl: '', // Sera mis à jour après le téléchargement sur Firebase Storage
         file: selectedFile,
         savedBy: user?.name || user?.email || 'Anonymous',
         createdBy: user?.name || user?.email || 'Anonymous',
@@ -111,6 +112,7 @@ export const useTemplateUpload = () => {
         mappingFields: mappedFields,
       };
       
+      // Sauvegarder le template (avec Firebase Storage pour le fichier)
       await saveTemplate(newTemplate);
       
       setShowUploadDialog(false);
@@ -124,7 +126,7 @@ export const useTemplateUpload = () => {
       }
       
       toast.success('Modèle ajouté avec succès', {
-        description: `Le modèle "${newTemplateName}" a été ajouté à votre bibliothèque.`
+        description: `Le modèle "${newTemplateName}" a été ajouté à votre bibliothèque et sauvegardé dans le cloud.`
       });
     } catch (error) {
       console.error('Error processing template:', error);

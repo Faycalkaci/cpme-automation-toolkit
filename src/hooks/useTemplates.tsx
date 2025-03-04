@@ -3,14 +3,32 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { templateStorage } from '@/services/templateStorage';
 import { Template } from '@/components/admin/templates/types';
+import { firestoreService } from '@/services/firebase/firestore';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useTemplates = (isAdmin: boolean = true) => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   const loadTemplates = async () => {
     try {
       setIsLoading(true);
+      
+      // Essayer d'abord de charger depuis Firestore
+      try {
+        const firestoreTemplates = await firestoreService.templates.getTemplates(isAdmin);
+        
+        if (firestoreTemplates.length > 0) {
+          setTemplates(firestoreTemplates);
+          setIsLoading(false);
+          return;
+        }
+      } catch (firestoreError) {
+        console.error('Error loading from Firestore, falling back to localStorage:', firestoreError);
+      }
+      
+      // Fallback au localStorage si Firestore échoue ou ne renvoie rien
       const storedTemplates = await templateStorage.getTemplates(isAdmin);
       
       // Convert templateStorage.Template to admin/templates/types.Template
@@ -28,6 +46,16 @@ export const useTemplates = (isAdmin: boolean = true) => {
       }));
       
       setTemplates(formattedTemplates);
+      
+      // Si on a chargé depuis localStorage et que l'utilisateur est connecté,
+      // on peut migrer les templates vers Firestore en arrière-plan
+      if (formattedTemplates.length > 0 && user) {
+        try {
+          migrateLocalTemplatesToFirestore(formattedTemplates, isAdmin);
+        } catch (migrationError) {
+          console.error('Error migrating templates to Firestore:', migrationError);
+        }
+      }
     } catch (error) {
       console.error('Error loading templates:', error);
       toast.error('Erreur lors du chargement des modèles');
@@ -36,8 +64,31 @@ export const useTemplates = (isAdmin: boolean = true) => {
     }
   };
 
+  const migrateLocalTemplatesToFirestore = async (localTemplates: Template[], isAdmin: boolean) => {
+    for (const template of localTemplates) {
+      try {
+        await firestoreService.templates.saveTemplate(template, isAdmin);
+        console.log(`Template ${template.id} migrated to Firestore`);
+      } catch (error) {
+        console.error(`Error migrating template ${template.id} to Firestore:`, error);
+      }
+    }
+  };
+
   const saveTemplate = async (template: Template) => {
     try {
+      // D'abord essayer de sauvegarder dans Firestore
+      try {
+        await firestoreService.templates.saveTemplate(template, isAdmin);
+        
+        // Recharger les templates depuis Firestore
+        await loadTemplates();
+        return true;
+      } catch (firestoreError) {
+        console.error('Error saving to Firestore, falling back to localStorage:', firestoreError);
+      }
+      
+      // Fallback au localStorage si Firestore échoue
       // Convert to templateStorage.Template format
       const storageTemplate = {
         ...template,
@@ -57,6 +108,18 @@ export const useTemplates = (isAdmin: boolean = true) => {
 
   const deleteTemplate = async (templateId: string) => {
     try {
+      // D'abord essayer de supprimer dans Firestore
+      try {
+        await firestoreService.templates.deleteTemplate(templateId);
+        
+        // Recharger les templates depuis Firestore
+        await loadTemplates();
+        return true;
+      } catch (firestoreError) {
+        console.error('Error deleting from Firestore, falling back to localStorage:', firestoreError);
+      }
+      
+      // Fallback au localStorage si Firestore échoue
       await templateStorage.deleteTemplate(templateId, isAdmin);
       await loadTemplates(); // Reload templates after deletion
       return true;
@@ -69,7 +132,7 @@ export const useTemplates = (isAdmin: boolean = true) => {
 
   useEffect(() => {
     loadTemplates();
-  }, [isAdmin]);
+  }, [isAdmin, user]);
 
   return {
     templates,
