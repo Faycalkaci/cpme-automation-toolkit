@@ -66,6 +66,14 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/contact" element={<Contact />} />
+        
+        {/* Payment success page - accessible without authentication */}
+        <Route path="/payment-success" element={
+          <MainLayout>
+            <PaymentSuccess />
+          </MainLayout>
+        } />
+        
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/spreadsheets" element={<Spreadsheets />} />
@@ -74,7 +82,6 @@ function AppRoutes() {
           <Route path="/emails" element={<Emails />} />
           <Route path="/users" element={<Users />} />
           <Route path="/billing" element={<Billing />} />
-          <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/licenses" element={<Licenses />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/settings" element={<Settings />} />

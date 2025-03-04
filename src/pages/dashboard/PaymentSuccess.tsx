@@ -29,8 +29,7 @@ const PaymentSuccess = () => {
           type: 'payment_success',
           details: { sessionId, plan: 'standard' },
           status: 'success',
-          userId: user.id,
-          timestamp: new Date()
+          userId: user.id
         });
         
         toast.success("Paiement réussi ! Vous avez maintenant accès à toutes les fonctionnalités.");
@@ -52,9 +51,26 @@ const PaymentSuccess = () => {
     }
   }, [user, isLoading, sessionId]);
 
-  // Redirect if user is not authenticated
+  // For non-authenticated users, show payment success but with a login button
   if (!isLoading && !user) {
-    return <Navigate to="/login" />;
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col items-center justify-center min-h-[70vh] p-6"
+      >
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-green-600 mb-6">Paiement confirmé</h1>
+          <p className="text-lg text-slate-600 mb-6">
+            Votre paiement a été traité avec succès. Veuillez vous connecter pour accéder à toutes les fonctionnalités.
+          </p>
+          <a href="/login" className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90 transition-colors">
+            Se connecter
+          </a>
+        </div>
+      </motion.div>
+    );
   }
 
   // Redirect to form page after updating
