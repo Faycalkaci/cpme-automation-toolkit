@@ -39,7 +39,7 @@ const Navbar: React.FC<NavbarProps> = ({
               <div className="w-9 h-9 rounded-lg bg-blue-gradient flex items-center justify-center">
                 <span className="text-white font-bold">CT</span>
               </div>
-              <span className="font-bold text-lg tracking-tight">CPME Tool</span>
+              <span className="font-bold text-lg tracking-tight">cpmetool.fr</span>
             </Link>
           </div>
 

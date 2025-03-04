@@ -14,10 +14,10 @@ const Footer: React.FC = () => {
               <div className="w-6 h-6 rounded-full bg-cpme flex items-center justify-center">
                 <span className="text-white font-bold text-xs">CT</span>
               </div>
-              <span className="font-bold text-sm">CPME Tool</span>
+              <span className="font-bold text-sm">cpmetool.fr</span>
             </div>
             <p className="text-sm text-slate-500 mt-2">
-              &copy; {currentYear} CPME Tool. Tous droits réservés.
+              &copy; {currentYear} cpmetool.fr. Tous droits réservés.
             </p>
           </div>
 

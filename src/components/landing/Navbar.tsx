@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center py-4">
           <Link to="/" className="flex items-center space-x-2" onClick={scrollToTop}>
             <div className="h-10 w-10 rounded-lg bg-blue-gradient flex items-center justify-center text-white font-bold text-lg">CT</div>
-            <span className="text-xl font-bold text-slate-800">CPME Tool</span>
+            <span className="text-xl font-bold text-slate-800">cpmetool.fr</span>
             <ChevronUp className="h-4 w-4 text-slate-600" />
           </Link>
           
