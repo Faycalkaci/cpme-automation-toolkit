@@ -6,7 +6,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { firestoreService } from '@/services/firebase/firestore';
 import { toast } from 'sonner';
-import { Loader, CheckCircle } from 'lucide-react';
 
 const PaymentSuccess = () => {
   const { user, isLoading } = useAuth();
@@ -30,7 +29,8 @@ const PaymentSuccess = () => {
           type: 'payment_success',
           details: { sessionId, plan: 'standard' },
           status: 'success',
-          userId: user.id
+          userId: user.id,
+          timestamp: new Date()
         });
         
         toast.success("Paiement réussi ! Vous avez maintenant accès à toutes les fonctionnalités.");
@@ -52,39 +52,14 @@ const PaymentSuccess = () => {
     }
   }, [user, isLoading, sessionId]);
 
-  // For non-authenticated users, show payment success but with a login button
+  // Redirect if user is not authenticated
   if (!isLoading && !user) {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col items-center justify-center min-h-[70vh] p-6"
-      >
-        <div className="text-center">
-          <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6"
-          >
-            <CheckCircle className="h-12 w-12 text-green-600" />
-          </motion.div>
-          <h1 className="text-3xl font-bold text-green-600 mb-6">Paiement confirmé</h1>
-          <p className="text-lg text-slate-600 mb-6">
-            Votre paiement a été traité avec succès. Veuillez vous connecter pour accéder à toutes les fonctionnalités.
-          </p>
-          <a href="/login" className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90 transition-colors">
-            Se connecter
-          </a>
-        </div>
-      </motion.div>
-    );
+    return <Navigate to="/login" />;
   }
 
-  // Redirect to dashboard page after updating
+  // Redirect to form page after updating
   if (isRedirecting) {
-    return <Navigate to="/dashboard" />;
+    return <Navigate to="/forms" />;
   }
 
   return (
@@ -95,30 +70,12 @@ const PaymentSuccess = () => {
       className="flex flex-col items-center justify-center min-h-[70vh] p-6"
     >
       <div className="text-center">
-        <motion.div 
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6"
-        >
-          <CheckCircle className="h-12 w-12 text-green-600" />
-        </motion.div>
         <h1 className="text-3xl font-bold text-green-600 mb-6">Paiement confirmé</h1>
         
         <div className="flex flex-col items-center space-y-4">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ 
-              duration: 2,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            className="text-primary"
-          >
-            <Loader className="h-10 w-10" />
-          </motion.div>
+          <Spinner size="lg" className="text-primary" />
           <p className="text-lg text-slate-600">
-            {isUpdating ? "Mise à jour de votre compte..." : "Redirection vers le tableau de bord..."}
+            {isUpdating ? "Mise à jour de votre compte..." : "Redirection en cours..."}
           </p>
         </div>
       </div>
