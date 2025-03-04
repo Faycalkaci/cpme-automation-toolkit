@@ -1,13 +1,15 @@
 
-// Configuration Firebase
+import { env } from '@/utils/env';
+
+// Configuration Firebase using environment variables
 export const firebaseConfig = {
-  apiKey: "AIzaSyBCRkbheYC3xO9xMgq3WSXIuToeIfpmGi8",
-  authDomain: "cpme-tool.firebaseapp.com",
-  projectId: "cpme-tool",
-  storageBucket: "cpme-tool.firebasestorage.app",
-  messagingSenderId: "856334692269",
-  appId: "1:856334692269:web:92a2b63ad074336056fb24",
-  measurementId: "G-E64GFE7CV3"
+  apiKey: env.firebase.apiKey,
+  authDomain: env.firebase.authDomain,
+  projectId: env.firebase.projectId,
+  storageBucket: env.firebase.storageBucket,
+  messagingSenderId: env.firebase.messagingSenderId,
+  appId: env.firebase.appId,
+  measurementId: env.firebase.measurementId
 };
 
-// Note: La configuration a été mise à jour avec les identifiants fournis par l'utilisateur
+// Note: Configuration has been updated to use environment variables for security
