@@ -6,6 +6,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { firestoreService } from '@/services/firebase/firestore';
 import { toast } from 'sonner';
+import { Loader, CheckCircle } from 'lucide-react';
 
 const PaymentSuccess = () => {
   const { user, isLoading } = useAuth();
@@ -61,6 +62,14 @@ const PaymentSuccess = () => {
         className="flex flex-col items-center justify-center min-h-[70vh] p-6"
       >
         <div className="text-center">
+          <motion.div 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6"
+          >
+            <CheckCircle className="h-12 w-12 text-green-600" />
+          </motion.div>
           <h1 className="text-3xl font-bold text-green-600 mb-6">Paiement confirmé</h1>
           <p className="text-lg text-slate-600 mb-6">
             Votre paiement a été traité avec succès. Veuillez vous connecter pour accéder à toutes les fonctionnalités.
@@ -73,9 +82,9 @@ const PaymentSuccess = () => {
     );
   }
 
-  // Redirect to form page after updating
+  // Redirect to dashboard page after updating
   if (isRedirecting) {
-    return <Navigate to="/forms" />;
+    return <Navigate to="/dashboard" />;
   }
 
   return (
@@ -86,12 +95,30 @@ const PaymentSuccess = () => {
       className="flex flex-col items-center justify-center min-h-[70vh] p-6"
     >
       <div className="text-center">
+        <motion.div 
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6"
+        >
+          <CheckCircle className="h-12 w-12 text-green-600" />
+        </motion.div>
         <h1 className="text-3xl font-bold text-green-600 mb-6">Paiement confirmé</h1>
         
         <div className="flex flex-col items-center space-y-4">
-          <Spinner size="lg" className="text-primary" />
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ 
+              duration: 2,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="text-primary"
+          >
+            <Loader className="h-10 w-10" />
+          </motion.div>
           <p className="text-lg text-slate-600">
-            {isUpdating ? "Mise à jour de votre compte..." : "Redirection en cours..."}
+            {isUpdating ? "Mise à jour de votre compte..." : "Redirection vers le tableau de bord..."}
           </p>
         </div>
       </div>
