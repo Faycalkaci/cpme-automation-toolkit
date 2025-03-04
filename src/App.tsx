@@ -68,11 +68,7 @@ function AppRoutes() {
         <Route path="/contact" element={<Contact />} />
         
         {/* Payment success page - accessible without authentication */}
-        <Route path="/payment-success" element={
-          <MainLayout>
-            <PaymentSuccess />
-          </MainLayout>
-        } />
+        <Route path="/payment-success" element={<PaymentSuccess />} />
         
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
