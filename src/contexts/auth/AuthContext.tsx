@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect } from 'react';
 import { AuthContextType, User } from './types';
 import { useAuthState } from './useAuthState';
@@ -7,18 +6,6 @@ import { useTwoFactorAuth } from './useTwoFactorAuth';
 import { useDeviceManagement } from './useDeviceManagement';
 import { getDeviceId, getLocation } from './authUtils';
 import { Timestamp } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import { firebaseConfig } from '@/services/firebase/config';
-import { initializeApp } from 'firebase/app';
-
-// Initialize Firebase if it hasn't been initialized yet
-let firebaseApp;
-try {
-  firebaseApp = initializeApp(firebaseConfig);
-} catch (error) {
-  // App already initialized, ignore
-  console.debug("Firebase already initialized");
-}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -112,14 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             
             parsedUser.lastLogin = new Date().toISOString();
-            
-            // Safe location tracking with error handling
-            try {
-              parsedUser.lastLocation = await getLocation();
-            } catch (locationError) {
-              console.error("Location access error:", locationError);
-              parsedUser.lastLocation = "Unknown";
-            }
+            parsedUser.lastLocation = await getLocation();
             
             localStorage.setItem('cpme-user', JSON.stringify(parsedUser));
             setUser(parsedUser);
@@ -135,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     checkAuth();
-  }, [toast, isFirebaseLoading, userProfile, isLoading, setUser, setIsLoading, MAX_DEVICES]);
+  }, [toast, isFirebaseLoading, userProfile, isLoading, setUser, setIsLoading]);
 
   const value = {
     user,
