@@ -3,12 +3,12 @@ import { UserService } from './userService';
 import { LicenseService } from './licenseService';
 import { AutomationLogService } from './automationLogService';
 import { TemplateService } from './templateService';
-import { DataService } from './data';
+import { DataService } from './dataService';
 import { db } from '../firebaseService';
 
 // Re-export types
 export * from './types';
-export * from './data';
+export * from './dataService';
 
 // Create and export service instances
 export const firestoreService = {
