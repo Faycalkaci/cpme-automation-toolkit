@@ -32,3 +32,13 @@
   content: "";
   @apply absolute inset-0 bg-gradient-shine bg-[length:200%_200%] animate-[shine_2s_ease-in-out_infinite];
 }
+
+/* Glass effect for cards */
+.glass-card {
+  @apply bg-white/60 backdrop-blur-md border border-white/30 shadow-lg;
+}
+
+/* Modern buttons */
+.modern-btn {
+  @apply rounded-xl px-6 py-3 font-medium transition-all duration-300 shadow-sm hover:shadow-md;
+}

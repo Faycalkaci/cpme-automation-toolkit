@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
@@ -11,16 +11,36 @@ const MainLayout: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
+  const [scrolled, setScrolled] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(prev => !prev);
   };
 
+  // Add scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <Navbar onMenuClick={toggleSidebar} />
+    <div className="flex flex-col min-h-screen bg-background aceternity-bg-grid">
+      <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-white [mask-image:radial-gradient(ellipse_at_top,white,transparent)] pointer-events-none"></div>
       
-      <div className="flex flex-1 w-full">
+      <Navbar 
+        onMenuClick={toggleSidebar}
+        scrolled={scrolled}
+      />
+      
+      <div className="flex flex-1 w-full relative z-10">
         {isAuthenticated && (
           <Sidebar 
             isOpen={sidebarOpen} 

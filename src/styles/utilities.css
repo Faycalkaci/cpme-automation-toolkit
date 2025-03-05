@@ -44,4 +44,30 @@
     content: '';
     @apply absolute top-0 left-0 w-full h-full bg-gradient-shine bg-[length:200%_100%] animate-shine;
   }
+
+  .aceternity-border-gradient {
+    @apply border border-transparent bg-origin-border bg-clip-padding;
+    background-image: linear-gradient(to right, rgb(249, 250, 251), rgb(249, 250, 251)),
+      linear-gradient(to right, rgb(14, 165, 233), rgb(99, 102, 241));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+
+  .aceternity-bg-grid {
+    background-size: 40px 40px;
+    background-image: 
+      linear-gradient(to right, rgb(229, 231, 235) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(229, 231, 235) 1px, transparent 1px);
+    background-attachment: fixed;
+  }
+
+  .aceternity-blur-gradient {
+    @apply relative;
+  }
+
+  .aceternity-blur-gradient::before {
+    content: '';
+    @apply absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl blur-xl opacity-50 group-hover:opacity-75 transition duration-200;
+    z-index: -1;
+  }
 }

@@ -8,10 +8,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 
 interface NavbarProps {
   onMenuClick: () => void;
+  scrolled?: boolean;
 }
 
 const Navbar: React.FC<NavbarProps> = ({
-  onMenuClick
+  onMenuClick,
+  scrolled = false
 }) => {
   const {
     user,
@@ -26,7 +28,11 @@ const Navbar: React.FC<NavbarProps> = ({
   };
   
   return (
-    <nav className="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-slate-200/50 shadow-subtle">
+    <nav className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+      scrolled 
+        ? 'bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-md' 
+        : 'bg-transparent'
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
@@ -36,7 +42,7 @@ const Navbar: React.FC<NavbarProps> = ({
               </Button>
             }
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-9 h-9 rounded-lg bg-blue-gradient flex items-center justify-center">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                 <span className="text-white font-bold">CT</span>
               </div>
               <span className="font-bold text-lg tracking-tight">cpmetool.fr</span>
@@ -47,9 +53,9 @@ const Navbar: React.FC<NavbarProps> = ({
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-2 hover:bg-slate-100">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
-                      <User className="h-4 w-4 text-slate-600" />
+                  <Button variant="ghost" className="flex items-center space-x-2 hover:bg-slate-100 group p-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center overflow-hidden group-hover:shadow-md transition-shadow">
+                      <User className="h-4 w-4 text-white" />
                     </div>
                     <div className="flex flex-col items-start text-sm">
                       <span className="font-medium">{user?.name}</span>
@@ -74,10 +80,10 @@ const Navbar: React.FC<NavbarProps> = ({
               </DropdownMenu>
             ) : (
               <div className="flex items-center space-x-2">
-                <Button variant="ghost" onClick={() => navigate('/login')}>
+                <Button variant="ghost" onClick={() => navigate('/login')} className="rounded-lg">
                   Connexion
                 </Button>
-                <Button onClick={() => navigate('/register')} className="bg-primary">
+                <Button onClick={() => navigate('/register')} className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-md hover:shadow-blue-500/20">
                   Inscription
                 </Button>
               </div>

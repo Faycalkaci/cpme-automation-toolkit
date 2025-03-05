@@ -23,6 +23,9 @@ export default {
       }
     },
     extend: {
+      fontFamily: {
+        sans: ['Urbanist', 'Inter', 'sans-serif'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -100,7 +103,11 @@ export default {
         'shine': {
           '0%': { backgroundPosition: '200% center' },
           '100%': { backgroundPosition: '-200% center' }
-        }
+        },
+        'spotlight': {
+          '0%': { opacity: 0, transform: 'translate(-72%, -62%) scale(0.5)' },
+          '100%': { opacity: 1, transform: 'translate(-50%,-40%) scale(1)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -110,7 +117,8 @@ export default {
         'fade-in': 'fade-in 0.4s ease-out',
         'blur-in': 'blur-in 0.4s ease-out',
         'scale-in': 'scale-in 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        'shine': 'shine 3s ease-in-out infinite'
+        'shine': 'shine 3s ease-in-out infinite',
+        'spotlight': 'spotlight 2s ease forwards',
       },
       boxShadow: {
         'soft': '0 4px 20px 0 rgba(0, 0, 0, 0.05)',
@@ -127,7 +135,9 @@ export default {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-shine': 'linear-gradient(45deg, rgba(255, 255, 255, 0) 45%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 55%)',
         'noise': 'url("/noise.png")',
-        'blue-gradient': 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%)'
+        'blue-gradient': 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%)',
+        'aceternity-grid': 'linear-gradient(to right, rgb(229, 231, 235) 1px, transparent 1px), linear-gradient(to bottom, rgb(229, 231, 235) 1px, transparent 1px)',
+        'glow-conic': 'conic-gradient(from 180deg at 50% 50%, #2563EB, #9089FC, #6366F1, #2563EB)',
       },
       transitionTimingFunction: {
         'spring': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)'
