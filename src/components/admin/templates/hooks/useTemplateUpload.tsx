@@ -9,7 +9,7 @@ import { firestoreService } from '@/services/firebase/firestore';
 
 export const useTemplateUpload = () => {
   const { user } = useAuth();
-  const { saveTemplate } = useTemplates(true);
+  const { saveTemplate, loadTemplates } = useTemplates(true);
   
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState('');
@@ -124,6 +124,9 @@ export const useTemplateUpload = () => {
         const mappingsMap = new Map(Object.entries(mappingConfig));
         await pdfMappingService.saveTemplateMapping(newTemplate.id, mappingsMap);
       }
+      
+      // Reload templates to refresh the list
+      await loadTemplates();
       
       toast.success('Modèle ajouté avec succès', {
         description: `Le modèle "${newTemplateName}" a été ajouté à votre bibliothèque et sauvegardé dans le cloud.`

@@ -69,7 +69,7 @@ const UploadDialog: React.FC<UploadDialogProps> = ({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="w-full max-w-[520px] max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Ajouter un nouveau modèle</DialogTitle>
           <DialogDescription>
