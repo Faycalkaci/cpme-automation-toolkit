@@ -46,7 +46,7 @@ export const useTemplateSave = () => {
         toast.error('Erreur lors de la sauvegarde du modèle');
       }
       
-      setShowDeleteDialog(false);
+      setShowSaveDialog(false); // Fixed: using the correct variable name
       setTemplateToSave(null);
     }
   };

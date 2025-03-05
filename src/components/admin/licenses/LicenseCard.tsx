@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, Calendar, MoreVertical, Clock, Ban } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { License } from './types';
+import { License } from '@/services/firebase/firestore/types';
 import { getBadgeColor } from './licenseUtils';
 
 interface LicenseCardProps {

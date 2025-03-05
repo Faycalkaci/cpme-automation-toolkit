@@ -1,6 +1,6 @@
 
 import { useState, useMemo } from 'react';
-import { License } from '../types';
+import { License } from '@/services/firebase/firestore/types';
 import { FilterOptions } from '../LicenseFilter';
 
 export const useFilterLicenses = (licenses: License[]) => {

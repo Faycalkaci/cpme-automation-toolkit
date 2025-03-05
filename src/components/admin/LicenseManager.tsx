@@ -6,6 +6,7 @@ import LicenseHeader from './licenses/LicenseHeader';
 import LicenseFilter from './licenses/LicenseFilter';
 import LicenseList from './licenses/LicenseList';
 import { useFilterLicenses } from './licenses/hooks/useFilterLicenses';
+import { License } from '@/services/firebase/firestore/types';
 
 const LicenseManager: React.FC = () => {
   const { licenses, addLicense, renewLicense, suspendLicense } = useLicenses();
@@ -14,6 +15,11 @@ const LicenseManager: React.FC = () => {
   
   const handleAddLicenseClick = () => {
     setShowAddDialog(true);
+  };
+
+  // Create a wrapper function to handle the type difference
+  const handleAddLicense = (license: Omit<License, 'id' | 'status' | 'users'>) => {
+    addLicense(license);
   };
   
   return (
@@ -34,7 +40,7 @@ const LicenseManager: React.FC = () => {
       <AddLicenseDialog 
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
-        onAddLicense={addLicense}
+        onAddLicense={handleAddLicense}
       />
     </div>
   );

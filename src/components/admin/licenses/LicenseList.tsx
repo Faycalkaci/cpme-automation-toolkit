@@ -1,7 +1,7 @@
 
 import React from 'react';
 import LicenseCard from './LicenseCard';
-import { License } from './types';
+import { License } from '@/services/firebase/firestore/types';
 
 interface LicenseListProps {
   licenses: License[];
