@@ -101,7 +101,7 @@ export const useTemplateProcessor = () => {
       
       if (!saved) {
         toast.error('Erreur lors de la sauvegarde du modèle', {
-          description: 'Veuillez réessayer ou contacter l'administrateur.'
+          description: 'Veuillez réessayer ou contacter l\'administrateur.'
         });
         return;
       }
