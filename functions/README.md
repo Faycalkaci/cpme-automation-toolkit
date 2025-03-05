@@ -28,8 +28,6 @@ This directory contains Firebase Cloud Functions for the CPME Tool application.
    ```
    firebase functions:config:set stripe.secret_key="YOUR_STRIPE_SECRET_KEY" stripe.webhook_secret="YOUR_STRIPE_WEBHOOK_SECRET"
    ```
-   
-   Important: Replace "YOUR_STRIPE_SECRET_KEY" with your actual Stripe secret key, but never commit this key to your repository.
 
 3. Deploy the functions:
    ```
@@ -47,35 +45,3 @@ This directory contains Firebase Cloud Functions for the CPME Tool application.
    ```
    stripe listen --forward-to http://localhost:5001/your-project-id/us-central1/stripeWebhooks
    ```
-
-## Configuration Instructions
-
-To configure your Stripe integration for production:
-
-1. Install the Firebase CLI globally if you haven't already:
-   ```
-   npm install -g firebase-tools
-   ```
-
-2. Log in to your Firebase account:
-   ```
-   firebase login
-   ```
-
-3. Set your Stripe secret key and webhook secret:
-   ```
-   firebase functions:config:set stripe.secret_key="sk_test_51QxqR102BN9qFxUQvlXRAN6cPMPJjqMvxGoZc1K9k4WbGhOdMy8OScECgB7vmm3QfKBA1XZSP9emXphxl4T3gzj90080txNpvU" stripe.webhook_secret="whsec_your_webhook_secret"
-   ```
-
-4. Deploy your functions:
-   ```
-   cd functions
-   npm run deploy
-   ```
-
-5. After deployment, set up the webhook in your Stripe dashboard:
-   - Go to Developers > Webhooks
-   - Add an endpoint with your Firebase function URL
-   - The URL will be: `https://us-central1-[YOUR-PROJECT-ID].cloudfunctions.net/stripeWebhooks`
-   - Select events to listen for: `checkout.session.completed`, `invoice.payment_succeeded`, `invoice.payment_failed`, `customer.subscription.deleted`
-
