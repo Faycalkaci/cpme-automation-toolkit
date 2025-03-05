@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import TemplateHeader from './templates/TemplateHeader';
 import TemplateList from './templates/TemplateList';
-import UploadDialog from './templates/UploadDialog';
+import UploadDialog from './templates/upload';
 import DeleteDialog from './templates/DeleteDialog';
 import SaveDialog from './templates/SaveDialog';
 import PreviewDialog from './templates/PreviewDialog';
