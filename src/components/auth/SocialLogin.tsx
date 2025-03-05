@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
 import { firestoreService } from '@/services/firebase/firestore';
 import { Timestamp } from 'firebase/firestore';
+import { useFirebase } from '@/contexts/FirebaseContext';
 
 export const SocialLogin: React.FC = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -16,6 +17,7 @@ export const SocialLogin: React.FC = () => {
   const [corsError, setCorsError] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { hasFirestorePermissions } = useFirebase();
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
@@ -23,79 +25,80 @@ export const SocialLogin: React.FC = () => {
     setCorsError(false);
     
     try {
-      console.log("Tentative de connexion Google...");
+      console.log("Attempting Google login...");
       
       // Wrap the Google login in a try-catch to handle potential CORS issues
       let user;
       try {
         user = await firebaseAuth.loginWithGoogle();
       } catch (authError: any) {
+        console.error("Google login error:", authError);
         // Handle specific CORS errors
         if (authError.message?.includes('Cross-Origin-Opener-Policy') || 
             authError.message?.includes('CORS')) {
           setCorsError(true);
-          throw new Error("Problème de connexion Google: erreur CORS. Veuillez essayer un autre navigateur ou désactiver les extensions de blocage de publicités.");
+          throw new Error("Google login CORS error: Please try another browser or disable ad blockers.");
         }
         throw authError;
       }
       
       if (!user || !user.email) {
-        throw new Error("Informations utilisateur incomplètes");
+        throw new Error("Incomplete user information");
       }
       
-      console.log("Connexion réussie, redirection...");
+      console.log("Login successful, redirecting...");
       
-      // Essayer de récupérer le profil utilisateur, mais ne pas bloquer si ça échoue
-      try {
-        let userProfile = await firestoreService.users.getByEmail(user.email);
-        
-        // Créer un profil s'il n'existe pas
-        if (!userProfile) {
-          try {
-            const newUser = {
-              email: user.email,
-              name: user.displayName || user.email.split('@')[0],
-              role: 'user' as const,
-              devices: [],
-              lastLogin: Timestamp.now(),
-              lastLocation: '',
-              // Stockage du fournisseur d'authentification pour sécurité
-              authProvider: 'google',
-              // Stockage de l'ID unique de l'utilisateur
-              uid: user.uid
-            };
-            
-            const userId = await firestoreService.users.create(newUser);
-            console.log("Nouveau profil utilisateur créé:", userId);
-          } catch (profileError) {
-            console.warn("Impossible de créer le profil utilisateur, mais la connexion continue:", profileError);
-          }
-        } else if (userProfile) {
-          // Vérification supplémentaire de sécurité - comparaison de l'UID
-          if (userProfile.uid && userProfile.uid !== user.uid) {
-            console.error("Incohérence d'identifiants détectée");
-            throw new Error("Erreur de sécurité: identifiants incohérents");
-          }
+      // Try to retrieve/update user profile if permissions allow
+      if (hasFirestorePermissions) {
+        try {
+          let userProfile = await firestoreService.users.getByEmail(user.email);
           
-          // Mettre à jour le profil existant
-          try {
-            await firestoreService.users.update(userProfile.id!, {
-              lastLogin: Timestamp.now(),
-              lastLocation: userProfile.lastLocation || '',
-              // Mise à jour du fournisseur au cas où il aurait changé
-              authProvider: 'google'
-            });
-            console.log("Profil utilisateur mis à jour");
-          } catch (updateError) {
-            console.warn("Impossible de mettre à jour le profil utilisateur, mais la connexion continue:", updateError);
+          // Create profile if it doesn't exist
+          if (!userProfile) {
+            try {
+              const newUser = {
+                email: user.email,
+                name: user.displayName || user.email.split('@')[0],
+                role: 'user' as const,
+                devices: [],
+                lastLogin: Timestamp.now(),
+                lastLocation: '',
+                authProvider: 'google',
+                uid: user.uid
+              };
+              
+              const userId = await firestoreService.users.create(newUser);
+              console.log("New user profile created:", userId);
+            } catch (profileError) {
+              console.warn("Cannot create user profile, but login continues:", profileError);
+            }
+          } else if (userProfile) {
+            // Additional security check - compare UID
+            if (userProfile.uid && userProfile.uid !== user.uid) {
+              console.error("User ID mismatch detected");
+              throw new Error("Security error: inconsistent credentials");
+            }
+            
+            // Update existing profile
+            try {
+              await firestoreService.users.update(userProfile.id!, {
+                lastLogin: Timestamp.now(),
+                lastLocation: userProfile.lastLocation || '',
+                authProvider: 'google'
+              });
+              console.log("User profile updated");
+            } catch (updateError) {
+              console.warn("Cannot update user profile, but login continues:", updateError);
+            }
           }
+        } catch (profileError) {
+          console.warn("User profile access error, but login continues:", profileError);
         }
-      } catch (profileError) {
-        console.warn("Erreur lors de l'accès au profil utilisateur, mais la connexion continue:", profileError);
-        // Continue anyway - user is authenticated, just might not have complete profile
+      } else {
+        console.log("Firestore permissions denied - skipping profile update");
       }
       
-      // Valider la connexion et rediriger l'utilisateur
+      // Validate login and redirect
       toast({
         title: "Connexion Google réussie",
         description: "Vous êtes maintenant connecté"
@@ -105,7 +108,7 @@ export const SocialLogin: React.FC = () => {
     } catch (error: any) {
       console.error('Google login error:', error);
       
-      // Détection spécifique des erreurs
+      // Specific error detection
       if (error.code === 'auth/unauthorized-domain') {
         setDomainError(true);
         toast({

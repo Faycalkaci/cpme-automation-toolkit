@@ -30,19 +30,22 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [hasFirestorePermissions, setHasFirestorePermissions] = useState(true);
   const { toast } = useToast();
 
-  // Charger le profil utilisateur depuis Firestore
+  // Load user profile from Firestore
   const loadUserProfile = async (user: FirebaseUser) => {
     try {
-      // Vérifier si l'utilisateur existe déjà dans Firestore
+      console.log("Attempting to load user profile for:", user.email);
+      // Check if user already exists in Firestore
       let profile = await firestoreService.users.getByEmail(user.email || '');
       
-      // Si l'utilisateur n'existe pas, créer un nouveau profil
+      // If user doesn't exist, create a new profile
       if (!profile && user.email) {
+        console.log("User profile not found, creating new profile");
         const newUser: UserProfile = {
           email: user.email,
           name: user.displayName || user.email.split('@')[0],
-          role: 'user', // Rôle par défaut
-          devices: []
+          role: 'user', // Default role
+          devices: [],
+          uid: user.uid // Store Firebase UID for security checks
         };
         
         const userId = await firestoreService.users.create(newUser);
@@ -50,7 +53,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       if (profile) {
-        // Mettre à jour le dernier login
+        // Update last login time
         await firestoreService.users.update(profile.id!, {
           lastLogin: new Date().toISOString()
         });
@@ -59,33 +62,37 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setHasFirestorePermissions(true);
       }
     } catch (error: any) {
-      console.error('Erreur lors du chargement du profil utilisateur:', error);
+      console.error('Error loading user profile:', error);
       
       // Check if this is a permissions error
       if (error.code === 'permission-denied' || 
           error.message?.includes('Missing or insufficient permissions')) {
         
+        console.log("Firestore permissions denied, using local profile");
         setHasFirestorePermissions(false);
         
-        // Create a minimal local profile with the Firebase user info
+        // Create a minimal local profile with Firebase user info
         if (user.email) {
           const localProfile: UserProfile = {
             id: user.uid,
             email: user.email,
             name: user.displayName || user.email.split('@')[0],
             role: 'user',
-            devices: []
+            devices: [],
+            uid: user.uid
           };
           setUserProfile(localProfile);
         }
 
-        // Only show toast for permission errors in non-development environments
-        if (process.env.NODE_ENV !== 'development') {
+        // Only show toast for permission errors in production
+        if (process.env.NODE_ENV === 'production') {
           toast({
             title: "Mode hors ligne activé",
             description: "Certaines fonctionnalités avancées ne sont pas disponibles.",
             variant: "default"
           });
+        } else {
+          console.log("Running in development mode - suppressing offline mode toast");
         }
       } else {
         toast({
@@ -97,14 +104,17 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // Écouter les changements d'état d'authentification Firebase
+  // Listen for Firebase auth state changes
   useEffect(() => {
+    console.log("Setting up Firebase auth state listener");
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
       
       if (user) {
+        console.log("User is authenticated:", user.email);
         await loadUserProfile(user);
       } else {
+        console.log("User logged out or not authenticated");
         setUserProfile(null);
         setHasFirestorePermissions(true); // Reset on logout
       }
@@ -115,7 +125,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => unsubscribe();
   }, [toast]);
 
-  // Fonction pour actualiser le profil utilisateur
+  // Function to refresh user profile
   const refreshProfile = async () => {
     if (firebaseUser) {
       setIsLoading(true);

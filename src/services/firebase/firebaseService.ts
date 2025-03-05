@@ -16,7 +16,7 @@ import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
 import { firebaseConfig } from './config';
 
-// Initialisation de Firebase
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
@@ -24,71 +24,91 @@ export const storage = getStorage(app);
 export const analytics = getAnalytics(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Configuration supplémentaire pour le provider Google
+// Additional config for Google provider
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
 
-// Service d'authentification
+// Authentication service
 export const firebaseAuth = {
-  // Connexion avec email/mot de passe
+  // Email/password login
   loginWithEmail: async (email: string, password: string) => {
     try {
+      console.log("Attempting email login for:", email);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log("Email login successful");
       return userCredential.user;
     } catch (error) {
-      console.error('Erreur de connexion:', error);
+      console.error('Login error:', error);
       throw error;
     }
   },
 
-  // Connexion avec Google
+  // Google login
   loginWithGoogle: async () => {
     try {
-      // Utiliser le resolver de popup explicitement
+      console.log("Attempting Google login");
+      // Explicitly use popup resolver
       const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
-      console.log("Connexion Google réussie:", result.user);
+      console.log("Google login successful:", result.user.email);
       return result.user;
-    } catch (error) {
-      console.error('Erreur de connexion Google:', error);
+    } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user') {
+        console.log("Popup closed by user");
+        throw new Error("Connexion annulée. La fenêtre a été fermée.");
+      } else if (error.code === 'auth/popup-blocked') {
+        console.error("Popup blocked by browser");
+        throw new Error("Le navigateur a bloqué la fenêtre de connexion. Veuillez autoriser les popups pour ce site.");
+      } else if (error.message?.includes('Cross-Origin-Opener-Policy')) {
+        console.error("CORS policy error during Google auth");
+        throw new Error("Erreur CORS: Essayez un autre navigateur ou désactivez les extensions de blocage.");
+      }
+      
+      console.error('Google login error:', error);
       throw error;
     }
   },
 
-  // Inscription
+  // Registration
   register: async (email: string, password: string) => {
     try {
+      console.log("Registering new user:", email);
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      console.log("Registration successful");
       return userCredential.user;
     } catch (error) {
-      console.error('Erreur d\'inscription:', error);
+      console.error('Registration error:', error);
       throw error;
     }
   },
 
-  // Déconnexion
+  // Logout
   logout: async () => {
     try {
+      console.log("Logging out user");
       await signOut(auth);
+      console.log("Logout successful");
       return true;
     } catch (error) {
-      console.error('Erreur de déconnexion:', error);
+      console.error('Logout error:', error);
       throw error;
     }
   },
 
-  // Réinitialisation du mot de passe
+  // Password reset
   resetPassword: async (email: string) => {
     try {
+      console.log("Sending password reset email to:", email);
       await sendPasswordResetEmail(auth, email);
+      console.log("Password reset email sent");
       return true;
     } catch (error) {
-      console.error('Erreur de réinitialisation du mot de passe:', error);
+      console.error('Password reset error:', error);
       throw error;
     }
   },
 
-  // État actuel de l'authentification
+  // Get current auth state
   getCurrentUser: (): User | null => {
     return auth.currentUser;
   }
