@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Form } from '@/components/ui/form';
-import { Captcha } from './Captcha';
 import { DemoAccounts } from './DemoAccounts';
 import { LoginFormFields } from './LoginFormFields';
 import { LoginAlerts } from './LoginAlerts';
@@ -15,11 +14,8 @@ export const LoginForm: React.FC = () => {
     isBlocked,
     attemptsLeft,
     timeRemaining,
-    showCaptcha,
-    captchaVerified,
     loginError,
-    onSubmit,
-    handleCaptchaVerify
+    onSubmit
   } = useLoginForm();
   
   const formattedTime = useTimeFormat(timeRemaining);
@@ -33,19 +29,10 @@ export const LoginForm: React.FC = () => {
         attemptsLeft={attemptsLeft}
       />
 
-      {showCaptcha && (
-        <Captcha 
-          onVerify={handleCaptchaVerify} 
-          isRequired={true} 
-        />
-      )}
-
       <LoginFormFields 
         form={form}
         isLoading={isLoading}
         isBlocked={isBlocked}
-        showCaptcha={showCaptcha}
-        captchaVerified={captchaVerified}
         onSubmit={onSubmit}
       />
       

@@ -13,8 +13,6 @@ interface LoginFormFieldsProps {
   form: UseFormReturn<LoginFormValues>;
   isLoading: boolean;
   isBlocked: boolean;
-  showCaptcha: boolean;
-  captchaVerified: boolean;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }
 
@@ -22,8 +20,6 @@ export const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
   form,
   isLoading,
   isBlocked,
-  showCaptcha,
-  captchaVerified,
   onSubmit
 }) => {
   return (
@@ -71,7 +67,7 @@ export const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
       <Button 
         type="submit" 
         className="w-full" 
-        disabled={isLoading || isBlocked || (showCaptcha && !captchaVerified)}
+        disabled={isLoading || isBlocked}
       >
         {isLoading ? (
           <>

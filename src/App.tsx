@@ -48,7 +48,8 @@ const SuperAdminRoute = ({ children }: { children: React.ReactNode }) => {
     return <div className="flex h-screen items-center justify-center">Chargement...</div>;
   }
   
-  if (!user || user.role !== 'super-admin') {
+  // Autoriser l'accès si l'utilisateur est super-admin ou si c'est super@cpmetool.fr
+  if (!user || (user.role !== 'super-admin' && user.email !== 'super@cpmetool.fr')) {
     return <Navigate to="/dashboard" />;
   }
   

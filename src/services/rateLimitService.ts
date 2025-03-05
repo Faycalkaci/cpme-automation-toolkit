@@ -3,7 +3,6 @@
 const RATE_LIMIT_KEY = 'auth-rate-limit';
 const MAX_ATTEMPTS = 5; // Nombre maximal de tentatives
 const COOLDOWN_TIME = 5 * 60 * 1000; // 5 minutes en millisecondes
-const CAPTCHA_THRESHOLD = 2; // Nombre de tentatives avant d'afficher le captcha
 
 interface RateLimitData {
   attempts: number;
@@ -80,14 +79,6 @@ export const rateLimitService = {
     const elapsed = Date.now() - data.timestamp;
     const remaining = Math.max(0, COOLDOWN_TIME - elapsed);
     return Math.ceil(remaining / 1000); // Convertir en secondes
-  },
-
-  /**
-   * Vérifie si le captcha doit être affiché
-   */
-  shouldShowCaptcha: (): boolean => {
-    const data = getRateLimitData();
-    return data.attempts >= CAPTCHA_THRESHOLD;
   },
 
   /**

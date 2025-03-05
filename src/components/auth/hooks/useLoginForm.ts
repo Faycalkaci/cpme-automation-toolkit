@@ -12,15 +12,12 @@ import { useRateLimit } from './useRateLimit';
 export const useLoginForm = () => {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [captchaVerified, setCaptchaVerified] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   
   const {
     isBlocked,
     attemptsLeft,
     timeRemaining,
-    showCaptcha,
-    recordAttempt,
     resetOnSuccess
   } = useRateLimit();
 
@@ -49,20 +46,7 @@ export const useLoginForm = () => {
       return;
     }
     
-    // Vérifier si le captcha est requis et validé
-    if (showCaptcha && !captchaVerified) {
-      setLoginError("Veuillez valider le captcha avant de vous connecter.");
-      return;
-    }
-    
     try {
-      // Enregistrer une tentative
-      const isUserBlocked = recordAttempt();
-      
-      if (isUserBlocked) {
-        return;
-      }
-      
       // Login avec Firebase Auth
       const loginResult = await login(sanitizedEmail, data.password);
       
@@ -111,20 +95,13 @@ export const useLoginForm = () => {
     }
   };
 
-  const handleCaptchaVerify = (success: boolean) => {
-    setCaptchaVerified(success);
-  };
-
   return {
     form,
     isLoading,
     isBlocked,
     attemptsLeft,
     timeRemaining,
-    showCaptcha,
-    captchaVerified,
     loginError,
     onSubmit: form.handleSubmit(onSubmit),
-    handleCaptchaVerify,
   };
 };
