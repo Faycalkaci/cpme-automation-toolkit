@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { FileUp } from 'lucide-react';
 
 interface TemplateHeaderProps {
-  onAddTemplate: () => void;
+  onAddTemplate?: () => void;
 }
 
 const TemplateHeader: React.FC<TemplateHeaderProps> = ({ onAddTemplate }) => {
