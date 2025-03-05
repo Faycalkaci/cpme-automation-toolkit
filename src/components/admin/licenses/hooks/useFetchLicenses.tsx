@@ -1,6 +1,7 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { License } from '../types';
+import { License } from '@/services/firebase/firestore/types';
 import { firestoreService } from '@/services/firebase/firestore';
 
 export const useFetchLicenses = () => {
