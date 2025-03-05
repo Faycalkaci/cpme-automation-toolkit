@@ -13,15 +13,31 @@ import { Timestamp } from 'firebase/firestore';
 export const SocialLogin: React.FC = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [domainError, setDomainError] = useState(false);
+  const [corsError, setCorsError] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     setDomainError(false);
+    setCorsError(false);
+    
     try {
       console.log("Tentative de connexion Google...");
-      const user = await firebaseAuth.loginWithGoogle();
+      
+      // Wrap the Google login in a try-catch to handle potential CORS issues
+      let user;
+      try {
+        user = await firebaseAuth.loginWithGoogle();
+      } catch (authError: any) {
+        // Handle specific CORS errors
+        if (authError.message?.includes('Cross-Origin-Opener-Policy') || 
+            authError.message?.includes('CORS')) {
+          setCorsError(true);
+          throw new Error("Problème de connexion Google: erreur CORS. Veuillez essayer un autre navigateur ou désactiver les extensions de blocage de publicités.");
+        }
+        throw authError;
+      }
       
       if (!user || !user.email) {
         throw new Error("Informations utilisateur incomplètes");
@@ -76,6 +92,7 @@ export const SocialLogin: React.FC = () => {
         }
       } catch (profileError) {
         console.warn("Erreur lors de l'accès au profil utilisateur, mais la connexion continue:", profileError);
+        // Continue anyway - user is authenticated, just might not have complete profile
       }
       
       // Valider la connexion et rediriger l'utilisateur
@@ -88,12 +105,18 @@ export const SocialLogin: React.FC = () => {
     } catch (error: any) {
       console.error('Google login error:', error);
       
-      // Détection spécifique de l'erreur de domaine non autorisé
+      // Détection spécifique des erreurs
       if (error.code === 'auth/unauthorized-domain') {
         setDomainError(true);
         toast({
           title: "Domaine non autorisé",
           description: "Ce domaine n'est pas autorisé dans les paramètres Firebase. Veuillez contacter l'administrateur.",
+          variant: "destructive"
+        });
+      } else if (corsError) {
+        toast({
+          title: "Erreur CORS",
+          description: "Problème d'accès au service d'authentification. Essayez un autre navigateur ou désactivez les extensions de blocage.",
           variant: "destructive"
         });
       } else {
@@ -126,6 +149,17 @@ export const SocialLogin: React.FC = () => {
           <AlertDescription>
             Le domaine actuel n'est pas autorisé dans les paramètres de votre projet Firebase. 
             Ajoutez "{window.location.hostname}" dans la liste des domaines autorisés de votre console Firebase.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {corsError && (
+        <Alert variant="destructive" className="mt-4">
+          <InfoIcon className="h-4 w-4" />
+          <AlertTitle>Erreur CORS détectée</AlertTitle>
+          <AlertDescription>
+            Une erreur de sécurité navigateur empêche la connexion. Essayez de désactiver les extensions de blocage
+            ou utilisez un autre navigateur.
           </AlertDescription>
         </Alert>
       )}

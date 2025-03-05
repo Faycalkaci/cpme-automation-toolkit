@@ -11,23 +11,56 @@ export const useDeleteTemplatesOperation = () => {
 
   const deleteAllTemplates = async (templates: Template[], onSuccess: () => Promise<void>) => {
     setIsDeleting(true);
+    let hasErrors = false;
+    
     try {
-      for (const template of templates) {
-        try {
-          await firestoreService.templates.deleteTemplate(template.id);
-        } catch (firestoreError) {
-          console.error(`Error deleting template ${template.id} from Firestore:`, firestoreError);
-          await deleteTemplate(template.id);
-        }
-      }
+      // Create an array to track deletion success/failure
+      const deletionResults = await Promise.allSettled(
+        templates.map(async (template) => {
+          try {
+            await firestoreService.templates.deleteTemplate(template.id);
+            return { id: template.id, success: true };
+          } catch (firestoreError) {
+            console.error(`Error deleting template ${template.id} from Firestore:`, firestoreError);
+            
+            // Attempt localStorage fallback
+            try {
+              await deleteTemplate(template.id);
+              return { id: template.id, success: true };
+            } catch (localStorageError) {
+              console.error(`Error deleting template ${template.id} from localStorage:`, localStorageError);
+              return { id: template.id, success: false };
+            }
+          }
+        })
+      );
+      
+      // Count success/failures
+      const successCount = deletionResults.filter(
+        result => result.status === 'fulfilled' && (result.value as any).success
+      ).length;
+      
+      const failureCount = templates.length - successCount;
+      hasErrors = failureCount > 0;
 
+      // Always call the success callback to refresh the template list
       await onSuccess();
       
-      toast.success('Tous les modèles ont été supprimés', {
-        description: `${templates.length} modèles ont été supprimés avec succès.`
-      });
+      if (successCount > 0) {
+        if (hasErrors) {
+          toast.success(`Suppression partielle des modèles`, {
+            description: `${successCount} modèles supprimés. ${failureCount} modèles n'ont pas pu être supprimés.`
+          });
+        } else {
+          toast.success('Tous les modèles ont été supprimés', {
+            description: `${templates.length} modèles ont été supprimés avec succès.`
+          });
+        }
+      } else {
+        throw new Error('Aucun modèle n\'a pu être supprimé');
+      }
       
-      return true;
+      return !hasErrors;
     } catch (error) {
       console.error('Error deleting all templates:', error);
       toast.error('Erreur lors de la suppression des modèles', {

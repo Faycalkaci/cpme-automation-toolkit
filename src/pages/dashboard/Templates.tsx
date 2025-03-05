@@ -1,23 +1,26 @@
 
-import React, { useState } from 'react';
-import { FileText, Download, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { FileText, Download, Trash2, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTemplates } from '@/hooks/useTemplates';
 import { Template } from '@/components/admin/templates/types';
+import { useFirebase } from '@/contexts/FirebaseContext';
 
 const Templates = () => {
   const [templateToDelete, setTemplateToDelete] = useState<Template | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
   const { user } = useAuth();
+  const { hasFirestorePermissions } = useFirebase();
   const isSuperAdmin = user?.role === 'super-admin';
   
   // Use the new useTemplates hook - set isAdmin to false to get only shared templates
-  const { templates, isLoading, deleteTemplate } = useTemplates(false);
+  const { templates, isLoading, deleteTemplate, isUsingLocalStorage } = useTemplates(false);
 
   // Delete a template
   const handleDeleteTemplate = async () => {
@@ -39,6 +42,22 @@ const Templates = () => {
     setShowDeleteDialog(true);
   };
 
+  // Safe URL opener that handles broken links gracefully
+  const openTemplateFile = (fileUrl?: string) => {
+    if (!fileUrl) {
+      toast.error("Ce modèle n'a pas de fichier associé");
+      return;
+    }
+    
+    // Try to open in new tab
+    const newWindow = window.open(fileUrl, '_blank');
+    
+    // If window failed to open or is null (popup blocked), show fallback message
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      toast.error("Impossible d'ouvrir le fichier. Vérifiez que les popups sont autorisés.");
+    }
+  };
+
   return (
     <div className="container py-6">
       <div className="flex items-center justify-between mb-8">
@@ -49,6 +68,17 @@ const Templates = () => {
           </p>
         </div>
       </div>
+
+      {/* Show storage mode alert */}
+      {isUsingLocalStorage && (
+        <Alert className="mb-6">
+          <Info className="h-4 w-4" />
+          <AlertTitle>Mode local activé</AlertTitle>
+          <AlertDescription>
+            Les modèles sont stockés localement dans votre navigateur. Certaines fonctionnalités avancées peuvent être limitées.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
@@ -96,7 +126,11 @@ const Templates = () => {
                   </div>
                   
                   <div className="flex items-center justify-between mt-2">
-                    <Button variant="ghost" size="sm" onClick={() => template.fileUrl && window.open(template.fileUrl, '_blank')}>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => openTemplateFile(template.fileUrl)}
+                    >
                       <Download className="h-4 w-4 mr-2" />
                       Télécharger
                     </Button>

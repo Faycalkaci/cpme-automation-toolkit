@@ -10,6 +10,7 @@ interface FirebaseContextType {
   userProfile: UserProfile | null;
   isLoading: boolean;
   refreshProfile: () => Promise<void>;
+  hasFirestorePermissions: boolean;
 }
 
 const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
@@ -26,6 +27,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasFirestorePermissions, setHasFirestorePermissions] = useState(true);
   const { toast } = useToast();
 
   // Charger le profil utilisateur depuis Firestore
@@ -54,14 +56,44 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
         
         setUserProfile(profile);
+        setHasFirestorePermissions(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors du chargement du profil utilisateur:', error);
-      toast({
-        title: "Erreur de profil",
-        description: "Impossible de charger votre profil. Veuillez réessayer.",
-        variant: "destructive"
-      });
+      
+      // Check if this is a permissions error
+      if (error.code === 'permission-denied' || 
+          error.message?.includes('Missing or insufficient permissions')) {
+        
+        setHasFirestorePermissions(false);
+        
+        // Create a minimal local profile with the Firebase user info
+        if (user.email) {
+          const localProfile: UserProfile = {
+            id: user.uid,
+            email: user.email,
+            name: user.displayName || user.email.split('@')[0],
+            role: 'user',
+            devices: []
+          };
+          setUserProfile(localProfile);
+        }
+
+        // Only show toast for permission errors in non-development environments
+        if (process.env.NODE_ENV !== 'development') {
+          toast({
+            title: "Mode hors ligne activé",
+            description: "Certaines fonctionnalités avancées ne sont pas disponibles.",
+            variant: "default"
+          });
+        }
+      } else {
+        toast({
+          title: "Erreur de profil",
+          description: "Impossible de charger votre profil. Veuillez réessayer.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -74,6 +106,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         await loadUserProfile(user);
       } else {
         setUserProfile(null);
+        setHasFirestorePermissions(true); // Reset on logout
       }
       
       setIsLoading(false);
@@ -95,7 +128,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     firebaseUser,
     userProfile,
     isLoading,
-    refreshProfile
+    refreshProfile,
+    hasFirestorePermissions
   };
 
   return <FirebaseContext.Provider value={value}>{children}</FirebaseContext.Provider>;
