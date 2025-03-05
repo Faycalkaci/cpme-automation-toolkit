@@ -1,42 +1,39 @@
 
 import { Timestamp } from 'firebase/firestore';
 
-export interface UserProfile {
-  id?: string;
-  email: string;
-  name: string;
-  role: 'super-admin' | 'admin' | 'user' | null;
-  organizationId?: string;
-  organizationName?: string;
-  devices?: string[];
-  lastLogin?: Timestamp | string;
-  lastLocation?: string;
-  authProvider?: 'google' | 'email' | 'apple' | string;
-  uid?: string; // Identifiant unique Firebase Auth
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
-}
-
+// License types
 export interface License {
-  id?: string;
+  id: string;
   cpme: string;
   plan: 'standard' | 'pro' | 'enterprise';
-  status: 'active' | 'expired' | 'pending';
+  status: 'active' | 'suspended' | 'expired';
   users: number;
   maxUsers: number;
   startDate: string;
   endDate: string;
   stripeSubscriptionId?: string;
-  customerId?: string;
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
+  createdAt: Date | Timestamp;
+  updatedAt: Date | Timestamp;
 }
 
+// User types
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+  role: 'user' | 'admin' | 'super-admin';
+  organizationId?: string;
+  createdAt: Date | Timestamp;
+  lastLogin?: Date | Timestamp;
+}
+
+// AutomationLog types
 export interface AutomationLog {
-  id?: string;
-  type: string;
-  details: any;
-  status: 'success' | 'error' | 'pending';
+  id: string;
+  type: 'email' | 'document' | 'reminder';
+  status: 'success' | 'error';
+  message: string;
+  metadata?: Record<string, any>;
   userId?: string;
-  timestamp: Timestamp;
+  createdAt: Date | Timestamp;
 }

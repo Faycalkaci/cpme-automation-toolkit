@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Template } from '../types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTemplates } from '@/hooks/useTemplates';
+import { firestoreService } from '@/services/firebase/firestore';
 
 export const useTemplateSave = () => {
   const { user } = useAuth();

@@ -48,20 +48,34 @@ export const useAddLicense = (
         users: 0,
         maxUsers,
         startDate: license.startDate,
-        endDate: license.endDate
+        endDate: license.endDate,
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
       // Add to Firestore
       const licenseId = await firestoreService.licenses.create(newLicense as any);
       
-      // Create Stripe subscription (to be connected if Stripe is configured)
+      // Create Stripe subscription (if Stripe is configured)
       try {
         // Get Stripe plan ID based on the plan
         const planId = PLANS[license.plan].id;
         
-        // Create a payment session (to be implemented later for actual creation)
-        // This part is not essential for basic functionality
-        console.log(`Creating a Stripe subscription for plan: ${planId}`);
+        // Create Stripe subscription record
+        const subscription = await stripeService.createSubscription({
+          customerId: license.cpme, // Using the CPME name as customer ID for now
+          priceId: planId,
+          licenseId: licenseId
+        });
+        
+        if (subscription && subscription.id) {
+          // Update license with the Stripe subscription ID
+          await firestoreService.licenses.update(licenseId, {
+            stripeSubscriptionId: subscription.id
+          });
+          
+          console.log(`Stripe subscription created: ${subscription.id}`);
+        }
       } catch (stripeError) {
         console.error('Error creating Stripe subscription:', stripeError);
         // We continue without throwing as the Firestore creation succeeded

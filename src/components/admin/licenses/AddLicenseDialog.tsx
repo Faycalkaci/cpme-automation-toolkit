@@ -79,7 +79,7 @@ const AddLicenseDialog: React.FC<AddLicenseDialogProps> = ({
                 setNewLicense({
                   ...newLicense, 
                   plan: value,
-                  maxUsers: value === 'standard' ? 1 : value === 'pro' ? 1 : 3
+                  maxUsers: value === 'enterprise' ? 3 : 1
                 })
               }
             >
@@ -87,8 +87,8 @@ const AddLicenseDialog: React.FC<AddLicenseDialogProps> = ({
                 <SelectValue placeholder="Sélectionnez un plan" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="standard">Standard (1 utilisateurs)</SelectItem>
-                <SelectItem value="pro">Pro (1 utilisateurs)</SelectItem>
+                <SelectItem value="standard">Standard (1 utilisateur)</SelectItem>
+                <SelectItem value="pro">Pro (1 utilisateur)</SelectItem>
                 <SelectItem value="enterprise">Enterprise (3 utilisateurs)</SelectItem>
               </SelectContent>
             </Select>

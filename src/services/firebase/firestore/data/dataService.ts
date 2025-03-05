@@ -1,46 +1,45 @@
 
-import { v4 as uuidv4 } from 'uuid';
-import { toast } from 'sonner';
-import { collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where, orderBy, Timestamp } from 'firebase/firestore';
-import { db } from '../../firebaseService';
+import { 
+  collection, 
+  doc, 
+  addDoc, 
+  getDoc, 
+  getDocs, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where, 
+  Firestore, 
+  Timestamp,
+  orderBy,
+  limit
+} from 'firebase/firestore';
 import { DataFile, DataFileDTO } from './types';
 import { dataStorageUtils } from './storageUtils';
-import { dataChunkService } from './dataChunkService';
 
 export class DataService {
-  private collectionRef;
-  
-  constructor(firestore = db) {
-    this.collectionRef = collection(firestore, 'dataFiles');
+  private db: Firestore;
+  private collectionName = 'data';
+
+  constructor(db: Firestore) {
+    this.db = db;
   }
-  
-  /**
-   * Saves a data file to Firestore and Storage
-   */
-  async saveDataFile(
-    file: File, 
-    headers: string[], 
-    data: any[], 
-    userId: string, 
-    organizationId?: string
-  ): Promise<string> {
+
+  async uploadFile(file: File, userId: string, organizationId?: string): Promise<DataFile> {
     try {
-      const fileId = uuidv4();
-      const dataFileRef = doc(this.collectionRef, fileId);
+      // Create a unique ID for the file
+      const fileId = `${Date.now()}_${file.name.replace(/[^a-z0-9]/gi, '_')}`;
       
-      // Upload the file to Storage
+      // Upload the file to storage and get the URL
       const fileUrl = await dataStorageUtils.uploadFile(fileId, file);
       
-      // Determine file type
+      // Create the file metadata
       const fileType = dataStorageUtils.getFileType(file.name);
-      
-      // Prepare metadata for Firestore
-      const dataFileData: DataFile = {
-        id: fileId,
+      const fileData: Omit<DataFileDTO, 'id'> = {
         name: file.name,
-        headers,
-        rowCount: data.length,
-        createdAt: new Date(),
+        headers: [], // Will be filled after parsing
+        rowCount: 0, // Will be filled after parsing
+        createdAt: Timestamp.now(),
         userId,
         organizationId,
         fileUrl,
@@ -49,32 +48,37 @@ export class DataService {
       };
       
       // Save metadata to Firestore
-      await setDoc(dataFileRef, {
-        ...dataFileData,
-        createdAt: Timestamp.fromDate(dataFileData.createdAt)
-      });
+      const fileRef = await addDoc(collection(this.db, this.collectionName), fileData);
       
-      // Save data chunks if necessary
-      await dataChunkService.saveDataChunks(fileId, data);
-      
-      return fileId;
+      // Return the complete file data
+      return {
+        ...fileData,
+        id: fileRef.id,
+        createdAt: fileData.createdAt.toDate(),
+      };
     } catch (error) {
-      console.error('Error saving data file to Firestore:', error);
-      toast.error('Erreur lors de la sauvegarde du fichier de données');
+      console.error('Error uploading file:', error);
       throw error;
     }
   }
-  
-  /**
-   * Retrieves all data files for a user
-   */
-  async getDataFiles(userId: string): Promise<DataFile[]> {
+
+  async getFiles(userId: string, organizationId?: string): Promise<DataFile[]> {
     try {
-      const q = query(
-        this.collectionRef, 
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
+      let q;
+      
+      if (organizationId) {
+        q = query(
+          collection(this.db, this.collectionName),
+          where('organizationId', '==', organizationId),
+          orderBy('createdAt', 'desc')
+        );
+      } else {
+        q = query(
+          collection(this.db, this.collectionName),
+          where('userId', '==', userId),
+          orderBy('createdAt', 'desc')
+        );
+      }
       
       const querySnapshot = await getDocs(q);
       
@@ -83,58 +87,111 @@ export class DataService {
         return {
           ...data,
           id: doc.id,
-          createdAt: data.createdAt?.toDate() || new Date(),
+          createdAt: data.createdAt.toDate(),
           lastUpdated: data.lastUpdated?.toDate(),
-        } as DataFile;
+        };
       });
     } catch (error) {
-      console.error('Error getting data files from Firestore:', error);
-      toast.error('Erreur lors du chargement des fichiers de données');
+      console.error('Error getting files:', error);
       throw error;
     }
   }
-  
-  /**
-   * Retrieves data for a file
-   */
-  async getDataFileRows(fileId: string): Promise<any[]> {
+
+  async getFileById(fileId: string): Promise<DataFile | null> {
     try {
-      return await dataChunkService.getDataChunks(fileId);
+      const fileRef = doc(this.db, this.collectionName, fileId);
+      const fileSnapshot = await getDoc(fileRef);
+      
+      if (!fileSnapshot.exists()) {
+        return null;
+      }
+      
+      const data = fileSnapshot.data() as DataFileDTO;
+      
+      return {
+        ...data,
+        id: fileSnapshot.id,
+        createdAt: data.createdAt.toDate(),
+        lastUpdated: data.lastUpdated?.toDate(),
+      };
     } catch (error) {
-      console.error('Error getting data file rows from Firestore:', error);
-      toast.error('Erreur lors du chargement des données');
+      console.error('Error getting file by ID:', error);
       throw error;
     }
   }
-  
-  /**
-   * Deletes a data file
-   */
-  async deleteDataFile(fileId: string): Promise<void> {
+
+  async updateFile(fileId: string, updates: Partial<DataFile>): Promise<void> {
     try {
-      // Get file info to have the URL
-      const dataFileRef = doc(this.collectionRef, fileId);
-      const dataFileDoc = await getDoc(dataFileRef);
+      const fileRef = doc(this.db, this.collectionName, fileId);
       
-      if (!dataFileDoc.exists()) {
-        throw new Error('Data file not found');
+      // Convert Date objects to Timestamps
+      const firestoreUpdates: any = {
+        ...updates,
+        lastUpdated: Timestamp.now()
+      };
+      
+      if (updates.createdAt) {
+        firestoreUpdates.createdAt = Timestamp.fromDate(updates.createdAt);
       }
       
-      const dataFile = dataFileDoc.data() as DataFile;
-      
-      // Delete rows in the subcollection
-      await dataChunkService.deleteDataChunks(fileId);
-      
-      // Delete the main document
-      await deleteDoc(dataFileRef);
-      
-      // Delete the file in Storage
-      if (dataFile.fileUrl) {
-        await dataStorageUtils.deleteFile(dataFile.fileUrl);
-      }
+      await updateDoc(fileRef, firestoreUpdates);
     } catch (error) {
-      console.error('Error deleting data file from Firestore:', error);
-      toast.error('Erreur lors de la suppression du fichier de données');
+      console.error('Error updating file:', error);
+      throw error;
+    }
+  }
+
+  async deleteFile(fileId: string): Promise<void> {
+    try {
+      // Get the file to access its URL
+      const file = await this.getFileById(fileId);
+      
+      if (file && file.fileUrl) {
+        // Delete from Storage
+        await dataStorageUtils.deleteFile(file.fileUrl);
+      }
+      
+      // Delete from Firestore
+      const fileRef = doc(this.db, this.collectionName, fileId);
+      await deleteDoc(fileRef);
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      throw error;
+    }
+  }
+
+  async getRecentFiles(limit: number = 5, organizationId?: string): Promise<DataFile[]> {
+    try {
+      let q;
+      
+      if (organizationId) {
+        q = query(
+          collection(this.db, this.collectionName),
+          where('organizationId', '==', organizationId),
+          orderBy('createdAt', 'desc'),
+          limit(limit)
+        );
+      } else {
+        q = query(
+          collection(this.db, this.collectionName),
+          orderBy('createdAt', 'desc'),
+          limit(limit)
+        );
+      }
+      
+      const querySnapshot = await getDocs(q);
+      
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data() as DataFileDTO;
+        return {
+          ...data,
+          id: doc.id,
+          createdAt: data.createdAt.toDate(),
+          lastUpdated: data.lastUpdated?.toDate(),
+        };
+      });
+    } catch (error) {
+      console.error('Error getting recent files:', error);
       throw error;
     }
   }

@@ -103,9 +103,8 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
             variant="ghost" 
             size="sm" 
             onClick={() => openDeleteDialog(template)}
-            disabled={template.permanent && !(template.savedBy === 'system')}
           >
-            <Trash2 className={`h-4 w-4 ${template.permanent ? 'text-slate-400' : 'text-destructive'}`} />
+            <Trash2 className={`h-4 w-4 text-destructive`} />
           </Button>
         </div>
       </CardFooter>
