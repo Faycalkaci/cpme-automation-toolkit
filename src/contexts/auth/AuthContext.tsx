@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect } from 'react';
 import { AuthContextType, User } from './types';
 import { useAuthState } from './useAuthState';
@@ -5,7 +6,6 @@ import { useAuthMethods } from './useAuthMethods';
 import { useTwoFactorAuth } from './useTwoFactorAuth';
 import { useDeviceManagement } from './useDeviceManagement';
 import { getDeviceId, getLocation } from './authUtils';
-import { Timestamp } from 'firebase/firestore';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -52,21 +52,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (!isFirebaseLoading && userProfile) {
-      const convertedUser: User = {
-        id: userProfile.id || '',
-        email: userProfile.email,
-        name: userProfile.name,
-        role: userProfile.role,
-        organizationId: userProfile.organizationId,
-        organizationName: userProfile.organizationName,
-        devices: userProfile.devices,
-        lastLogin: userProfile.lastLogin,
-        lastLocation: userProfile.lastLocation
-      };
-      
-      setUser(convertedUser);
-      setIsLoading(false);
+      try {
+        console.log('User profile loaded from Firebase:', userProfile.email);
+        const convertedUser: User = {
+          id: userProfile.id || '',
+          email: userProfile.email,
+          name: userProfile.name,
+          role: userProfile.role,
+          organizationId: userProfile.organizationId,
+          organizationName: userProfile.organizationName,
+          devices: userProfile.devices,
+          lastLogin: userProfile.lastLogin,
+          lastLocation: userProfile.lastLocation
+        };
+        
+        setUser(convertedUser);
+        console.log('User set in context:', convertedUser.email, 'role:', convertedUser.role);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error setting user from profile:', error);
+        setUser(null);
+        setIsLoading(false);
+      }
     } else if (!isFirebaseLoading) {
+      console.log('No user profile found in Firebase, setting user to null');
       setUser(null);
       setIsLoading(false);
     }
@@ -76,8 +85,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const checkAuth = async () => {
       try {
         if (!userProfile) {
+          console.log('No Firebase user profile, checking localStorage');
           const storedUser = localStorage.getItem('cpme-user');
           if (storedUser) {
+            console.log('Found user in localStorage');
             const parsedUser = JSON.parse(storedUser);
             
             const deviceId = getDeviceId();
@@ -102,7 +113,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             parsedUser.lastLocation = await getLocation();
             
             localStorage.setItem('cpme-user', JSON.stringify(parsedUser));
+            console.log('Updated user in localStorage and setting in context');
             setUser(parsedUser);
+          } else {
+            console.log('No user found in localStorage');
           }
         }
       } catch (error) {
@@ -115,7 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     checkAuth();
-  }, [toast, isFirebaseLoading, userProfile, isLoading, setUser, setIsLoading]);
+  }, [toast, isFirebaseLoading, userProfile, isLoading, setUser, setIsLoading, MAX_DEVICES]);
 
   const value = {
     user,

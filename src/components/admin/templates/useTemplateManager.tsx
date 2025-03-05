@@ -6,7 +6,7 @@ import { useTemplateSave } from './hooks/useTemplateSave';
 import { useTemplatePreview } from './hooks/useTemplatePreview';
 
 export const useTemplateManager = () => {
-  const { templates, loadTemplates } = useTemplates(true);
+  const { templates, loadTemplates, isLoading, error } = useTemplates(true);
   
   const uploadHook = useTemplateUpload();
   const deleteHook = useTemplateDelete();
@@ -17,6 +17,8 @@ export const useTemplateManager = () => {
     // Template data
     templates,
     loadTemplates,
+    isLoading,
+    error,
     canSaveTemplate: saveHook.canSaveTemplate,
     
     // Upload dialog and functionality
