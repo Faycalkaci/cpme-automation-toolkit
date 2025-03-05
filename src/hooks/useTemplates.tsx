@@ -10,6 +10,7 @@ export const useTemplates = (isAdmin: boolean = true) => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [useFirestore, setUseFirestore] = useState(true);
   const { user } = useAuth();
 
   const loadTemplates = async () => {
@@ -18,24 +19,34 @@ export const useTemplates = (isAdmin: boolean = true) => {
       setError(null);
       console.log('Loading templates, isAdmin:', isAdmin);
       
-      // Essayer d'abord de charger depuis Firestore
-      try {
-        console.log('Attempting to load templates from Firestore');
-        const firestoreTemplates = await firestoreService.templates.getTemplates(isAdmin);
-        
-        console.log('Firestore templates loaded:', firestoreTemplates.length);
-        if (firestoreTemplates.length > 0) {
-          setTemplates(firestoreTemplates);
-          setIsLoading(false);
-          return;
+      // Tenter de charger depuis Firestore seulement si l'option est activée
+      if (useFirestore) {
+        try {
+          console.log('Attempting to load templates from Firestore');
+          const firestoreTemplates = await firestoreService.templates.getTemplates(isAdmin);
+          
+          console.log('Firestore templates loaded:', firestoreTemplates.length);
+          if (firestoreTemplates.length > 0) {
+            setTemplates(firestoreTemplates);
+            setIsLoading(false);
+            return;
+          }
+        } catch (firestoreError) {
+          console.error('Error loading from Firestore, error details:', firestoreError);
+          // Désactiver Firestore après une erreur d'autorisation
+          if (firestoreError instanceof Error && 
+              firestoreError.message.includes('permission-denied')) {
+            console.log('Firestore permission denied, disabling Firestore usage');
+            setUseFirestore(false);
+          }
+          setError(`Erreur Firestore: ${firestoreError instanceof Error ? firestoreError.message : 'Erreur inconnue'}`);
         }
-      } catch (firestoreError) {
-        console.error('Error loading from Firestore, error details:', firestoreError);
-        setError(`Erreur Firestore: ${firestoreError instanceof Error ? firestoreError.message : 'Erreur inconnue'}`);
+      } else {
+        console.log('Firestore usage disabled, skipping Firestore attempt');
       }
       
-      console.log('Falling back to localStorage');
-      // Fallback au localStorage si Firestore échoue ou ne renvoie rien
+      console.log('Loading from localStorage');
+      // Charger depuis localStorage (toujours comme fallback)
       const storedTemplates = await templateStorage.getTemplates(isAdmin);
       console.log('Local storage templates loaded:', storedTemplates.length);
       
@@ -55,9 +66,8 @@ export const useTemplates = (isAdmin: boolean = true) => {
       
       setTemplates(formattedTemplates);
       
-      // Si on a chargé depuis localStorage et que l'utilisateur est connecté,
-      // on peut migrer les templates vers Firestore en arrière-plan
-      if (formattedTemplates.length > 0 && user) {
+      // Tenter la migration vers Firestore seulement si l'option est activée
+      if (useFirestore && formattedTemplates.length > 0 && user) {
         try {
           console.log('Migrating templates to Firestore');
           migrateLocalTemplatesToFirestore(formattedTemplates, isAdmin);
@@ -75,32 +85,49 @@ export const useTemplates = (isAdmin: boolean = true) => {
   };
 
   const migrateLocalTemplatesToFirestore = async (localTemplates: Template[], isAdmin: boolean) => {
+    // Si Firestore est désactivé, ne pas tenter la migration
+    if (!useFirestore) return;
+    
     for (const template of localTemplates) {
       try {
         await firestoreService.templates.saveTemplate(template, isAdmin);
         console.log(`Template ${template.id} migrated to Firestore`);
       } catch (error) {
         console.error(`Error migrating template ${template.id} to Firestore:`, error);
+        // Désactiver Firestore après une erreur d'autorisation
+        if (error instanceof Error && 
+            error.message.includes('permission-denied')) {
+          console.log('Firestore permission denied during migration, disabling Firestore usage');
+          setUseFirestore(false);
+          break; // Arrêter la migration
+        }
       }
     }
   };
 
   const saveTemplate = async (template: Template) => {
     try {
-      // D'abord essayer de sauvegarder dans Firestore
-      try {
-        console.log('Saving template to Firestore:', template.id);
-        await firestoreService.templates.saveTemplate(template, isAdmin);
-        
-        // Recharger les templates depuis Firestore
-        await loadTemplates();
-        return true;
-      } catch (firestoreError) {
-        console.error('Error saving to Firestore, falling back to localStorage:', firestoreError);
+      // Si Firestore est activé, essayer de sauvegarder dans Firestore d'abord
+      if (useFirestore) {
+        try {
+          console.log('Saving template to Firestore:', template.id);
+          await firestoreService.templates.saveTemplate(template, isAdmin);
+          
+          // Recharger les templates depuis Firestore
+          await loadTemplates();
+          return true;
+        } catch (firestoreError) {
+          console.error('Error saving to Firestore, falling back to localStorage:', firestoreError);
+          // Désactiver Firestore après une erreur d'autorisation
+          if (firestoreError instanceof Error && 
+              firestoreError.message.includes('permission-denied')) {
+            console.log('Firestore permission denied during save, disabling Firestore usage');
+            setUseFirestore(false);
+          }
+        }
       }
       
-      // Fallback au localStorage si Firestore échoue
-      // Convert to templateStorage.Template format
+      // Fallback à localStorage si Firestore échoue ou est désactivé
       console.log('Saving template to localStorage:', template.id);
       const storageTemplate = {
         ...template,
@@ -109,7 +136,7 @@ export const useTemplates = (isAdmin: boolean = true) => {
       };
       
       await templateStorage.saveTemplate(storageTemplate, isAdmin);
-      await loadTemplates(); // Reload templates after saving
+      await loadTemplates(); // Recharger les templates après la sauvegarde
       return true;
     } catch (error) {
       console.error('Error saving template:', error);
@@ -120,22 +147,30 @@ export const useTemplates = (isAdmin: boolean = true) => {
 
   const deleteTemplate = async (templateId: string) => {
     try {
-      // D'abord essayer de supprimer dans Firestore
-      try {
-        console.log('Deleting template from Firestore:', templateId);
-        await firestoreService.templates.deleteTemplate(templateId);
-        
-        // Recharger les templates depuis Firestore
-        await loadTemplates();
-        return true;
-      } catch (firestoreError) {
-        console.error('Error deleting from Firestore, falling back to localStorage:', firestoreError);
+      // Si Firestore est activé, essayer de supprimer dans Firestore d'abord
+      if (useFirestore) {
+        try {
+          console.log('Deleting template from Firestore:', templateId);
+          await firestoreService.templates.deleteTemplate(templateId);
+          
+          // Recharger les templates depuis Firestore
+          await loadTemplates();
+          return true;
+        } catch (firestoreError) {
+          console.error('Error deleting from Firestore, falling back to localStorage:', firestoreError);
+          // Désactiver Firestore après une erreur d'autorisation
+          if (firestoreError instanceof Error && 
+              firestoreError.message.includes('permission-denied')) {
+            console.log('Firestore permission denied during delete, disabling Firestore usage');
+            setUseFirestore(false);
+          }
+        }
       }
       
-      // Fallback au localStorage si Firestore échoue
+      // Fallback au localStorage si Firestore échoue ou est désactivé
       console.log('Deleting template from localStorage:', templateId);
       await templateStorage.deleteTemplate(templateId, isAdmin);
-      await loadTemplates(); // Reload templates after deletion
+      await loadTemplates(); // Recharger les templates après la suppression
       return true;
     } catch (error) {
       console.error('Error deleting template:', error);

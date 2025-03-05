@@ -6,6 +6,7 @@ import { useTemplateSave } from './hooks/useTemplateSave';
 import { useTemplatePreview } from './hooks/useTemplatePreview';
 
 export const useTemplateManager = () => {
+  // Utiliser useTemplates avec isAdmin=true pour obtenir les templates administratifs
   const { templates, loadTemplates, isLoading, error } = useTemplates(true);
   
   const uploadHook = useTemplateUpload();

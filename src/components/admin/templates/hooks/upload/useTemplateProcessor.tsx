@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Template } from '../../types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth/AuthContext';
 import { pdfMappingService, DEFAULT_FIELD_MAPPINGS } from '@/services/pdfMappingService';
 import { useTemplates } from '@/hooks/useTemplates';
 
@@ -35,6 +35,7 @@ export const useTemplateProcessor = () => {
     }
 
     try {
+      console.log('Processing template upload for:', newTemplateName);
       let documentType: 'pdf' | 'doc' | 'docx' = 'pdf';
       if (selectedFile.name.toLowerCase().endsWith('.doc')) {
         documentType = 'doc';
@@ -62,8 +63,9 @@ export const useTemplateProcessor = () => {
         }
       }
 
+      const templateId = Date.now().toString();
       const newTemplate: Template = {
-        id: Date.now().toString(),
+        id: templateId,
         name: newTemplateName,
         type: newTemplateType,
         date: new Date().toISOString().split('T')[0],
@@ -81,8 +83,28 @@ export const useTemplateProcessor = () => {
         mappingFields: mappedFields,
       };
       
-      // Sauvegarder le template (avec Firebase Storage pour le fichier)
-      await saveTemplate(newTemplate);
+      console.log('Saving template:', newTemplate.name, 'Type:', documentType);
+      
+      // Créer une URL temporaire pour le fichier avant l'upload
+      if (documentType === 'pdf') {
+        try {
+          const objectUrl = URL.createObjectURL(selectedFile);
+          newTemplate.fileUrl = objectUrl;
+          console.log('Created temporary object URL:', objectUrl);
+        } catch (urlError) {
+          console.error('Error creating object URL:', urlError);
+        }
+      }
+      
+      // Sauvegarder le template (cela tentera d'abord Firestore, puis localStorage)
+      const saved = await saveTemplate(newTemplate);
+      
+      if (!saved) {
+        toast.error('Erreur lors de la sauvegarde du modèle', {
+          description: 'Veuillez réessayer ou contacter l'administrateur.'
+        });
+        return;
+      }
       
       // Fermer la boîte de dialogue et réinitialiser les champs
       setShowUploadDialog(false);
@@ -91,19 +113,25 @@ export const useTemplateProcessor = () => {
       setSelectedFile(null);
       
       if (Object.keys(mappingConfig).length > 0) {
-        const mappingsMap = new Map(Object.entries(mappingConfig));
-        await pdfMappingService.saveTemplateMapping(newTemplate.id, mappingsMap);
+        try {
+          const mappingsMap = new Map(Object.entries(mappingConfig));
+          await pdfMappingService.saveTemplateMapping(newTemplate.id, mappingsMap);
+        } catch (mappingError) {
+          console.error('Error saving template mapping:', mappingError);
+        }
       }
       
       // Recharger les templates pour actualiser la liste
       await loadTemplates();
       
       toast.success('Modèle ajouté avec succès', {
-        description: `Le modèle "${newTemplateName}" a été ajouté à votre bibliothèque et sauvegardé dans le cloud.`
+        description: `Le modèle "${newTemplateName}" a été ajouté à votre bibliothèque.`
       });
     } catch (error) {
       console.error('Error processing template:', error);
-      toast.error('Erreur lors du traitement du modèle');
+      toast.error('Erreur lors du traitement du modèle', {
+        description: error instanceof Error ? error.message : 'Une erreur est survenue'
+      });
     }
   };
 
