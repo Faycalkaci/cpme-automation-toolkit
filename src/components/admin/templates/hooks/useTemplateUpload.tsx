@@ -115,6 +115,7 @@ export const useTemplateUpload = () => {
       // Sauvegarder le template (avec Firebase Storage pour le fichier)
       await saveTemplate(newTemplate);
       
+      // Fermer la boîte de dialogue et réinitialiser les champs
       setShowUploadDialog(false);
       setNewTemplateName('');
       setNewTemplateType('autre');
@@ -125,7 +126,7 @@ export const useTemplateUpload = () => {
         await pdfMappingService.saveTemplateMapping(newTemplate.id, mappingsMap);
       }
       
-      // Reload templates to refresh the list
+      // Recharger les templates pour actualiser la liste
       await loadTemplates();
       
       toast.success('Modèle ajouté avec succès', {

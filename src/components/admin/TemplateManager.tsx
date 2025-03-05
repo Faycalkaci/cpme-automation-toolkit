@@ -8,7 +8,7 @@ import SaveDialog from './templates/SaveDialog';
 import PreviewDialog from './templates/PreviewDialog';
 import { useTemplateManager } from './templates/useTemplateManager';
 import { Button } from '@/components/ui/button';
-import { Trash2, AlertTriangle } from 'lucide-react';
+import { Trash2, AlertTriangle, FileUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useTemplates } from '@/hooks/useTemplates';
@@ -86,20 +86,27 @@ const TemplateManager: React.FC = () => {
   
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <TemplateHeader onAddTemplate={() => setShowUploadDialog(true)} />
+      <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:justify-between">
+        <TemplateHeader />
         
-        {templates.length > 0 && (
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={() => setShowDeleteAllDialog(true)}
-            className="flex items-center gap-1"
-          >
-            <Trash2 className="h-4 w-4" />
-            Supprimer tous
+        <div className="flex items-center gap-2 justify-end">
+          <Button onClick={() => setShowUploadDialog(true)} className="flex items-center gap-1">
+            <FileUp className="h-4 w-4" />
+            Ajouter un modèle
           </Button>
-        )}
+          
+          {templates.length > 0 && (
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={() => setShowDeleteAllDialog(true)}
+              className="flex items-center gap-1"
+            >
+              <Trash2 className="h-4 w-4" />
+              Supprimer tous
+            </Button>
+          )}
+        </div>
       </div>
       
       <TemplateList 

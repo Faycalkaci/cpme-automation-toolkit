@@ -9,11 +9,8 @@ interface TemplateHeaderProps {
 
 const TemplateHeader: React.FC<TemplateHeaderProps> = ({ onAddTemplate }) => {
   return (
-    <div className="flex justify-between items-center">
+    <div>
       <h2 className="text-2xl font-bold">Gestion des modèles PDF</h2>
-      <Button onClick={onAddTemplate}>
-        <FileUp className="mr-2 h-4 w-4" /> Ajouter un modèle
-      </Button>
     </div>
   );
 };
