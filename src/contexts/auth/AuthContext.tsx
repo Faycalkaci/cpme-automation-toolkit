@@ -6,6 +6,7 @@ import { useTwoFactorAuth } from './useTwoFactorAuth';
 import { useDeviceManagement } from './useDeviceManagement';
 import { getDeviceId, getLocation } from './authUtils';
 import { Timestamp } from 'firebase/firestore';
+import crypto from 'crypto';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -78,7 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!userProfile) {
           const storedUser = localStorage.getItem('cpme-user');
           if (storedUser) {
-            const parsedUser = JSON.parse(storedUser);
+            const decryptedUser = decrypt(storedUser);
+            const parsedUser = JSON.parse(decryptedUser);
             
             const deviceId = getDeviceId();
             if (!parsedUser.devices) {
@@ -101,7 +103,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             parsedUser.lastLogin = new Date().toISOString();
             parsedUser.lastLocation = await getLocation();
             
-            localStorage.setItem('cpme-user', JSON.stringify(parsedUser));
+            const encryptedUser = encrypt(JSON.stringify(parsedUser));
+            localStorage.setItem('cpme-user', encryptedUser);
             setUser(parsedUser);
           }
         }
@@ -134,4 +137,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+const encrypt = (text: string): string => {
+  const cipher = crypto.createCipher('aes-256-ctr', 'password');
+  return cipher.update(text, 'utf8', 'hex') + cipher.final('hex');
+};
+
+const decrypt = (text: string): string => {
+  const decipher = crypto.createDecipher('aes-256-ctr', 'password');
+  return decipher.update(text, 'hex', 'utf8') + decipher.final('utf8');
 };
