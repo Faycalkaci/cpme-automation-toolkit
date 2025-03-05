@@ -10,35 +10,25 @@ export const useTemplates = (isAdmin: boolean = true) => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const [useLocalStorageOnly, setUseLocalStorageOnly] = useState(false);
 
   const loadTemplates = async () => {
     try {
       setIsLoading(true);
       
-      // Skip Firestore if we've already determined we don't have permissions
-      if (!useLocalStorageOnly) {
-        try {
-          const firestoreTemplates = await firestoreService.templates.getTemplates(isAdmin);
-          
-          if (firestoreTemplates.length > 0) {
-            setTemplates(firestoreTemplates);
-            setIsLoading(false);
-            return;
-          }
-        } catch (firestoreError: any) {
-          console.error('Error loading from Firestore, falling back to localStorage:', firestoreError);
-          
-          // If this is a permissions error, set the flag to avoid future Firestore calls
-          if (firestoreError.code === 'permission-denied' || 
-              firestoreError.message?.includes('Missing or insufficient permissions')) {
-            setUseLocalStorageOnly(true);
-            console.info('Switching to localStorage-only mode due to Firestore permission issues');
-          }
+      // Essayer d'abord de charger depuis Firestore
+      try {
+        const firestoreTemplates = await firestoreService.templates.getTemplates(isAdmin);
+        
+        if (firestoreTemplates.length > 0) {
+          setTemplates(firestoreTemplates);
+          setIsLoading(false);
+          return;
         }
+      } catch (firestoreError) {
+        console.error('Error loading from Firestore, falling back to localStorage:', firestoreError);
       }
       
-      // Fallback to localStorage
+      // Fallback au localStorage si Firestore échoue ou ne renvoie rien
       const storedTemplates = await templateStorage.getTemplates(isAdmin);
       
       // Convert templateStorage.Template to admin/templates/types.Template
@@ -57,8 +47,9 @@ export const useTemplates = (isAdmin: boolean = true) => {
       
       setTemplates(formattedTemplates);
       
-      // Only attempt migration if we have permission to Firestore
-      if (formattedTemplates.length > 0 && user && !useLocalStorageOnly) {
+      // Si on a chargé depuis localStorage et que l'utilisateur est connecté,
+      // on peut migrer les templates vers Firestore en arrière-plan
+      if (formattedTemplates.length > 0 && user) {
         try {
           migrateLocalTemplatesToFirestore(formattedTemplates, isAdmin);
         } catch (migrationError) {
@@ -86,26 +77,19 @@ export const useTemplates = (isAdmin: boolean = true) => {
 
   const saveTemplate = async (template: Template) => {
     try {
-      // Skip Firestore if we've already determined we don't have permissions
-      if (!useLocalStorageOnly) {
-        try {
-          await firestoreService.templates.saveTemplate(template, isAdmin);
-          
-          // Recharger les templates depuis Firestore
-          await loadTemplates();
-          return true;
-        } catch (firestoreError: any) {
-          console.error('Error saving to Firestore, falling back to localStorage:', firestoreError);
-          
-          // If this is a permissions error, set the flag to avoid future Firestore calls
-          if (firestoreError.code === 'permission-denied' || 
-              firestoreError.message?.includes('Missing or insufficient permissions')) {
-            setUseLocalStorageOnly(true);
-          }
-        }
+      // D'abord essayer de sauvegarder dans Firestore
+      try {
+        await firestoreService.templates.saveTemplate(template, isAdmin);
+        
+        // Recharger les templates depuis Firestore
+        await loadTemplates();
+        return true;
+      } catch (firestoreError) {
+        console.error('Error saving to Firestore, falling back to localStorage:', firestoreError);
       }
       
-      // Fallback to localStorage
+      // Fallback au localStorage si Firestore échoue
+      // Convert to templateStorage.Template format
       const storageTemplate = {
         ...template,
         mappingFields: template.mappingFields || template.fields || [],
@@ -124,26 +108,18 @@ export const useTemplates = (isAdmin: boolean = true) => {
 
   const deleteTemplate = async (templateId: string) => {
     try {
-      // Skip Firestore if we've already determined we don't have permissions
-      if (!useLocalStorageOnly) {
-        try {
-          await firestoreService.templates.deleteTemplate(templateId);
-          
-          // Recharger les templates depuis Firestore
-          await loadTemplates();
-          return true;
-        } catch (firestoreError: any) {
-          console.error('Error deleting from Firestore, falling back to localStorage:', firestoreError);
-          
-          // If this is a permissions error, set the flag to avoid future Firestore calls
-          if (firestoreError.code === 'permission-denied' || 
-              firestoreError.message?.includes('Missing or insufficient permissions')) {
-            setUseLocalStorageOnly(true);
-          }
-        }
+      // D'abord essayer de supprimer dans Firestore
+      try {
+        await firestoreService.templates.deleteTemplate(templateId);
+        
+        // Recharger les templates depuis Firestore
+        await loadTemplates();
+        return true;
+      } catch (firestoreError) {
+        console.error('Error deleting from Firestore, falling back to localStorage:', firestoreError);
       }
       
-      // Fallback to localStorage
+      // Fallback au localStorage si Firestore échoue
       await templateStorage.deleteTemplate(templateId, isAdmin);
       await loadTemplates(); // Reload templates after deletion
       return true;
@@ -163,7 +139,6 @@ export const useTemplates = (isAdmin: boolean = true) => {
     isLoading,
     loadTemplates,
     saveTemplate,
-    deleteTemplate,
-    isUsingLocalStorage: useLocalStorageOnly
+    deleteTemplate
   };
 };
