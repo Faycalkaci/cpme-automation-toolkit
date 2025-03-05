@@ -15,11 +15,28 @@ export function useLicenseGuard(feature: FeatureType) {
 
   useEffect(() => {
     const checkLicense = async () => {
-      if (!user || !user.organizationId) {
+      if (!user) {
         setIsAuthorized(false);
         setIsLoading(false);
         toast.error('Accès refusé', {
           description: 'Vous devez être connecté pour accéder à cette fonctionnalité'
+        });
+        navigate('/');
+        return;
+      }
+
+      // Super Admin bypass - ils ont accès à toutes les fonctionnalités sans licence
+      if (user.role === 'super-admin') {
+        setIsAuthorized(true);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!user.organizationId) {
+        setIsAuthorized(false);
+        setIsLoading(false);
+        toast.error('Accès refusé', {
+          description: 'Vous devez être associé à une organisation pour accéder à cette fonctionnalité'
         });
         navigate('/');
         return;
