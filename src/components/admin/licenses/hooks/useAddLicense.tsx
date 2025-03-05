@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { License } from '../types';
+import { License } from '@/services/firebase/firestore/types';
 import { firestoreService } from '@/services/firebase/firestore';
 import { stripeService, PLANS } from '@/services/stripe/stripeService';
 
@@ -54,19 +54,19 @@ export const useAddLicense = (
       // Add to Firestore
       const licenseId = await firestoreService.licenses.create(newLicense as any);
       
-      // Create Stripe subscription (to be connected if Stripe is configured)
+      // Configure Stripe webhook integration (this part only logs the integration point for now)
       try {
         // Get Stripe plan ID based on the plan
         const planId = PLANS[license.plan].id;
         
-        // Create a payment session (to be implemented later for actual creation)
-        // This part is not essential for basic functionality
-        console.log(`Creating a Stripe subscription for plan: ${planId}`);
+        // Note: actual Stripe subscription would happen here
+        // The webhook handlers in Firebase Functions will process Stripe events
+        console.log(`Stripe webhook setup for license ID: ${licenseId}, plan: ${planId}`);
+        
       } catch (stripeError) {
-        console.error('Error creating Stripe subscription:', stripeError);
-        // We continue without throwing as the Firestore creation succeeded
-        toast.warning('Licence créée, mais problème avec Stripe', {
-          description: 'L\'abonnement de paiement n\'a pas pu être configuré automatiquement.'
+        console.error('Error with Stripe integration:', stripeError);
+        toast.warning('Licence créée, mais problème avec l\'intégration Stripe', {
+          description: 'La configuration Stripe n\'a pas pu être complétée automatiquement.'
         });
       }
       

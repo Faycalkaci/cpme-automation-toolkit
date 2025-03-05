@@ -17,15 +17,6 @@ export const useTemplateDelete = () => {
   
   const handleDeleteTemplate = async () => {
     if (templateToDelete) {
-      if (templateToDelete.permanent && templateToDelete.savedBy === 'system') {
-        toast.error('Action non autorisée', {
-          description: 'Vous ne pouvez pas supprimer un modèle système permanent.'
-        });
-        setShowDeleteDialog(false);
-        setTemplateToDelete(null);
-        return;
-      }
-      
       try {
         await deleteTemplate(templateToDelete.id);
         

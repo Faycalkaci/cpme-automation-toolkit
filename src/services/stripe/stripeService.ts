@@ -173,5 +173,27 @@ export const stripeService = {
       console.error('Erreur lors de la création de la session du portail client:', error);
       throw error;
     }
+  },
+  
+  // Configuration des webhooks Stripe
+  configureWebhooks: async (): Promise<boolean> => {
+    try {
+      // Note: This is a placeholder for webhook configuration
+      // In a real implementation, this would communicate with your backend
+      console.log('Setting up Stripe webhooks configuration');
+      
+      // Log the webhook endpoints that should be configured in the Stripe dashboard
+      console.log('Webhook endpoints should be configured for:');
+      console.log('- customer.subscription.created');
+      console.log('- customer.subscription.updated');
+      console.log('- customer.subscription.deleted');
+      console.log('- invoice.payment_succeeded');
+      console.log('- invoice.payment_failed');
+      
+      return true;
+    } catch (error) {
+      console.error('Erreur lors de la configuration des webhooks Stripe:', error);
+      return false;
+    }
   }
 };
